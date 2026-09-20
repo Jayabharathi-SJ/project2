@@ -1,0 +1,486 @@
+=== PAGE 1 ===
+Adoption of the effective interest rate (EIR) and the 
+reducing balance method as the interest calculation 
+for all types of hire-purchase financing (page 2)
+Replacement of the term Base Lending Rate 
+with Reference Rate (page 4)
+Usage of the EIR and updates to the maximum 
+rates for hire-purchase financing (page 5)
+Introduction of a grace period for system 
+enhancements (page 6)
+Consumer Guide:  
+Five Key Highlights of the 
+Hire-Purchase (Amendment) Act 2026  
+Flexibility to opt for electronic or digital signatures 
+and to receive hire-purchase agreements and 
+related documents electronically (page 3)
+
+=== PAGE 2 ===
+2 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+Adoption of the effective interest rate (EIR) and the 
+reducing balance method as the interest calculation for 
+all types of hire-purchase financing
+So, what is the EIR?  
+EIR is the actual percentage of interest you pay over the financing tenure. It reflects the amount 
+of interest you pay based on your outstanding loan balance at any given time, when you pay your 
+monthly instalments. Sometimes, a hire-purchase provider will quote a flat rate to consumers, 
+which appears cheaper. But, this does not result in lower monthly instalments.
+For example, let’s assume you borrow RM100,000 over a period of 9 years (or 108 months).
+Under the reducing balance method, interest charges will be calculated based on the 
+outstanding principal amount. This helps you see from your monthly instalment, how 
+much of that amount is for interest charges and how much is for the principal repayment.  
+  
+•	 Interest	charges: Calculated based on your outstanding principal amount  
+•	 Principal	repayment: Balance remaining from your monthly instalments (less interest charges)   
+ which will be allocated to r epay your outstanding principal amount 
+ 
+Hire-purchase providers will use the EIR together with the reducing balance method in the 
+calculation of interest charges. 
+Hire-Purchase	
+Financing Rate Quoted Monthly Instalment* Total Interest
+Bank A Flat rate of 3% p.a. RM1,175.93 RM27,000
+Bank B EIR of 5.5% p.a. RM1,175.93 RM27,000
+Bank C EIR of 5% p.a. RM1,151.76 RM24,390
+*Will differ depending on your loan tenure
+The above example illustrates that your monthly instalment remains the same with both Bank 
+A and Bank B, where you end up paying a monthly instalment of RM1,175.93 and the same 
+total interest of RM27,000. With Bank C, you end up paying a lower monthly instalment of 
+RM1,151.76 and a lower total interest of RM24,390. For a loan with a 9-year tenure, an EIR of 
+5.5% p.a. is equivalent to a flat rate of 3% p.a.
+Hence, even though the flat rate may appear cheaper at first glance, it does not reflect the 
+true cost of financing costs borne by you. It actually makes the hire-purchase product seem 
+cheaper than it really is. 
+To prevent unexpected outcomes and to compare rates accurately, always ask the  
+hire-purchase provider for the EIR. 
+Remember, it is important that you understand all key features, charges, terms  
+and conditions of the hire-purchase financing agreement before you sign it!
+
+
+=== PAGE 3 ===
+3 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+Y ou	can	continue	to	choose	either	fixed	rate	or	variable	rate	hire-purchase	financing.
+While both these types of financing will adopt the reducing balance method for interest 
+calculation, the key	differences between these two rates include:
+Fixed rate financing
+• The interest rate stays the same for the
+entire financing period
+• Your monthly instalments will also stay
+the same, making it easier to plan your
+monthly budgets
+• This option is great if you prefer certainty
+in monthly expenditures
+Variable rate financing
+• The interest rate can change (go up or
+down) over time based on upward or
+downward movements in the Overnight
+Policy Rate (OPR)
+• Your monthly instalments can go up
+or down, depending on interest rate
+changes
+• This option is great if you’re looking for
+possible savings if interest rates go down
+Flexibility to opt for electronic or digital signatures 
+and to receive hire-purchase agreements and related 
+documents electronically
+Electronic signature Digital signature
+Legal 
+definition
+Any letter, character, number, 
+sound or any other symbol or any 
+combination thereof created in an 
+electronic form adopted by a person 
+as a signature, as set out under the 
+Electronic Commerce Act 2006
+A transformation of a message 
+using an asymmetric cryptosystem 
+such that a person having the initial 
+message and the signer’
+s public key 
+can accurately determine: (a) whether 
+the transformation was created using 
+the private key that corresponds 
+to the signer’s public key; and (b) 
+whether the message has been 
+altered since the transformation was 
+made, as set out under the Digital 
+Signature Act 1997
+Key 
+difference
+It can be as simple as typing a name 
+or inserting an image of a signature. 
+To verify the signer’s identity and 
+protect against fraud, the signer’s 
+physical presence will be required for 
+the initial signing of a hire-purchase 
+agreement
+It uses encryption technology and 
+digital certificates to authenticate and 
+verify the identity of the signer
+
+
+=== PAGE 4 ===
+4 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+Benefits How to sign
+Convenience: Sign hire-purchase 
+agreements anywhere*
+Speed: Faster loan processing
+Security: Secure and legally binding
+Receive: Review the hire-purchase 
+agreement electronically or digitally
+Sign: E-sign or digitally sign the  
+hire-purchase agreement 
+Confirm: Receive a softcopy or 
+hardcopy of your signed agreement**
+How does the above flexibility benefit you as a consumer?
+* Regar dless of the method used to sign a hire-purchase agreement, hire-purchase 
+providers are required to carry out proper due diligence on the prospective customer.  
+In some cases, this will require the prospective customer’s physical presence for the 
+initial signing of a hire-purchase agreement.
+** The method of delivering hir e-purchase documents, either electronically or via hardcopy, 
+must be clearly stated and mutually agreed upon in the hire-purchase agreement. This 
+ensures transparency and a shared understanding between the hire-purchase provider 
+and you as the customer.
+Replacement of the term Base Lending Rate with 
+Reference Rate
+The term Base Lending Rate has been replaced with Reference Rate. This involves 
+operational amendments to the relevant provisions in the Hire-Purchase Act 1967, in line 
+with several enhancements made to Bank Negara Malaysia’s Reference Rate Framework 
+in 2015 and 2022. (Click here to read more about BNM’s Reference Rate Framework)
+
+
+=== PAGE 5 ===
+5 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+Usage of the EIR updates to the maximum rates for 
+hire-purchase financing  (Set out under the revised Hire-Purchase 
+(Term Charges) Regulations)
+Hire-purchase providers will use the EIR moving forward, which provides a more 
+transparent and accurate reflection of the true cost of the hire-purchase financing.
+While flat rate offers 
+might look cheaper, it 
+does not show the true 
+cost of financing. EIR 
+gives a clearer picture of 
+what you are paying.
+Transparency
+You are only charged 
+interest on what you 
+still owe, which is the 
+remaining principal 
+balance. The amount 
+of interest charged 
+reduces with each 
+monthly instalment 
+repayment.
+Fairer interest charges
+Helps you become 
+a smarter shopper! 
+You can do 
+apple-to-apple 
+comparison of 
+rates offered by 
+different hire-
+purchase providers.
+Informed decisions
+What	updates	were	made	to	the	maximum	rates	for	hire-purchase	financing?
+For fixed	rate	financing, the existing maximum flat rate of 10% p.a. has been replaced with its 
+corresponding EIR based on loan tenures. For variable	rate	financing, the existing maximum 
+EIR of 17% p.a. has been retained. Hire-purchase financing contracted under variable rates are 
+already subject to reducing balance method under the existing Hire-Purchase Act 1967.
+Fixed	rate	financing
+The EIR is capped at 17% p.a. for loans 
+with tenures of up to 5 years and  
+16% p.a. for loans with tenures of 
+more than 5 years*
+Variable	rate	financing
+The EIR is capped at 17% p.a. for all 
+loan tenures as per the existing  
+Hire-Purchase (Term Charges) 
+Regulations 2005
+* The maximum rates ar e set based on the conversion from flat rate to EIR, which is  
+determined by the loan tenure. This ensures that the corresponding EIRs do not exceed the 
+existing maximum flat rate of 10% p.a. The maximum threshold of EIR 17% p.a. has been 
+assessed as an adequate consumer safeguard against excessive interest charges. This 
+threshold is subject to periodic review by the authorities to ensure it remains fit-for-purpose.
+
+
+=== PAGE 6 ===
+6 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+Introduction of a grace period for system and 
+infrastructure enhancements
+The effective date of the Hire-Purchase (Amendment) Act 2026 is 1 June 2026*. From this 
+date, hire-purchase providers will be given a grace period until 31 March 2027 to conduct the 
+necessary systems and infrastructure enhancements in implementing the reducing balance 
+method and pricing in EIR. 
+This means that hire-purchase companies that are ready to use the new reducing 
+balance method earlier can start doing so anytime during the grace period, 
+beginning from the date the Hire-Purchase (Amendment) Act 2026 comes into 
+effect.
+If you want to enjoy the benefits of the new reducing balance method, you can 
+look for packages offered by these early adopters. Be proactive by comparing your 
+options and choose what works best for you.
+Most importantly, remember to ask the hire-purchase company whether they have 
+already switched to the new method!
+*As announced by the Ministry of Domestic Trade and Cost of Living (KPDN)
+
+=== PAGE 7 ===
+7 |  Company  Profile
+7  |  Company  Proﬁle
+Check the hire-purchase providers’ website or app, or go to their branch
+Review the latest oﬀerings of ﬁxed and/or variable rate hire-purchase ﬁnancing
+Explore your options
+Shop around, ask ‘What’s the EIR?’ and compare the EIR oﬀered by several hire-purchase 
+providers before accepting any oﬀer
+Check your finances
+Have enough funds not only to cover the upfront 10% down payment but also the monthly 
+instalments throughout the ﬁnancing tenure, including other related costs such as 
+insurance/takaful, road tax and vehicle maintenance
+Review the hire-purchase agreement
+Carefully read the hire-purchase agreement, product disclosure sheet and any other 
+disclosure materials to fully understand your obligations and your rights
+Sign the hire-purchase agreement
+If you agree to the terms and conditions, sign the hire-purchase agreement and ensure you 
+receive a hardcopy or softcopy of the signed agreement
+Pay your monthly instalments on time
+Make timely payments on your monthly instalments and ﬁnancial obligations to avoid 
+unnecessary fees or charges, which can increase your overall cost of ﬁnancing
+PRO TIP: Thinking of opting for hire-purchase? Here’s how to get started!
+ 
+01
+02
+03
+04
+05
+06
+07
+Know your redress options 
+If you are dissatisfied with the product or service, contact your hire-purchase provider to 
+lodge a complaint. If you disagree with the final decision, you may follow these steps:
+(a) If your hir e-purchase provider is regulated by Bank Negara Malaysia, you may escalate 
+your complaint to the Financial Markets Ombudsman Service (FMOS) (Click here to 
+learn more about FMOS) or BNMLINK
+(b) If your hir e-purchase provider is a non-bank, you may lodge a complaint to the 
+Ministry of Domestic Trade and Cost of Living (KPDN) via KPDN’s e-complaint portal  
+(https://eaduan.kpdn.gov.my/), toll-free number (1-800-886-800) or email  
+(e-aduan@kpdn.gov.my), or send a letter to or visit the nearest KPDN office
+
+=== PAGE 8 ===
+8 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+Frequently Asked Questions (FAQs)
+1
+Why is the reducing balance method being adopted 
+for	fixed	rate	loans	under	the	Hire-Purchase	
+(Amendment) Act 2026? 
+ 
+The reducing balance method replaces the Rule of 78 
+method. The method of computation applied determines 
+how interest charges are allocated throughout the tenure 
+of a loan.  
+ 
+The Rule of 78 method frontloads interest payments, 
+resulting in higher initial interest costs and a larger 
+outstanding principal amount due in the event of early 
+settlements. The fixed rate formula under the existing 
+Hire-Purchase Act 1967 uses the flat rate method, which 
+computes interest based on the original loan amount 
+throughout the repayment tenure. This means that in 
+the early years of your loan, for example, up to the third 
+year of a 9-year plan, most of your monthly payments go 
+towards paying interest, not reducing the loan amount. 
+So, your balance goes down by a smaller portion at the 
+beginning. 
+ 
+The reducing balance method has been applied for 
+variable rate hire-purchase financing all this while 
+under the existing Hire-Purchase Act 1967 and is now 
+streamlined to be adopted for fixed rate hire-purchase 
+financing under the Hire-Purchase (Amendment) Act 
+2026. As at December 2024, variable rate hire-purchase 
+financing accounts for 15% of hire-purchase offerings 
+by banks. The move to the reducing balance method 
+is intended to ensure fairer outcomes for customers, 
+particularly those who settle their loans early. With this 
+method, interest is only charged on the remaining unpaid 
+principal balance. So, more of your monthly instalments 
+goes towards reducing the actual loan, which means 
+your balance goes down faster each month throughout 
+the loan period. 
+ 
+The reducing balance method is a more transparent 
+measure of pricing as it is more accurately reflects the 
+actual cost of financing borne by customers, while 
+ensuring fairer outcomes for consumers.
+2
+How does the reducing balance method adopted 
+by	hire-purchase	providers	benefit	customers? 
+ 
+The reducing balance method charges interest on 
+the customer’s outstanding principal balance each 
+month, resulting in fairer interest charges as interest 
+will only be charged on the current amount that is 
+owed, which in turn progressively reduces with each 
+monthly instalment paid. 
+3
+With	the	abolishment	of	the	flat	rate	formula	
+for the calculation of interest charges, will this 
+mean	that	hire-purchase	providers	will	only	offer	
+variable rate loans moving forward? 
+ 
+No, the Hire-Purchase (Amendment) Act 2026 
+continues to allow hire-purchase providers to offer 
+both fixed rate and variable rate loans. Customers 
+will continue to have the option to choose a fixed rate 
+or variable rate hire-purchase loan. 
+4
+How	do	I	know	if	the	interest	rate	offered	to	me	 
+is reasonable? 
+ 
+Moving forward under the Hire-Purchase 
+(Amendment) Act 2026, hire-purchase providers will 
+begin using the EIR instead of the flat rate. 
+The EIR shows the true cost of your loan for the 
+duration of the financing tenure. It takes into account 
+the amount of interest you pay based on your 
+outstanding loan balance at any given time after 
+accounting for monthly repayments. The EIR gives a 
+clearer and more accurate picture for the purpose of 
+rate comparison. Shop around to find the best deals 
+that meet your specific financing needs.
+8 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+
+=== PAGE 9 ===
+9 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+5
+Will	hir e-purchase 	pr oviders 	perform 	any 	verifications 	
+on prospective customers before entering into a hire-
+purchase agreement?
+Prior to entering into a hire-purchase agreement, 
+hire-purchase providers are required to conduct 
+the necessary due diligence to verify the identity of 
+the prospective customer. To do this, hire-purchase 
+providers will request for relevant information and 
+identification documents from you, such as, your full 
+name as per National Registration Identity Card (NRIC) 
+or passport or any other official document issued 
+by an authorised body that can be used to verify a 
+person’s identity, NRIC or passport or any other official 
+documents, residential and mailing address, and  
+contact number.  
+ 
+Hire-purchase providers will then verify the identity of the 
+prospective customer through appropriate verification 
+methods, such as verification of the prospective 
+customer’s thumbprint via a biometric reader, or usage 
+of a facial recognition system. This verification process 
+will not only be conducted at the point of on-boarding, 
+but also for transactions which require explicit customer 
+agreement, such as, for any alterations to an existing 
+hire-purchase agreement. Such measures serve as 
+safeguards against fraudulent practices.
+6
+If I sign a hire-purchase agreement electronically or 
+digitally, will my hire-purchase agreement be sent to me 
+electronically?
+Hire-purchase providers now have the option to 
+issue hire-purchase documents and notices through 
+electronic channels. However, specific to the delivery 
+of hire-purchase agreements or contracts, the method 
+of delivery (electronically or hardcopy) must be clearly 
+stated and mutually agreed upon in the hire-purchase 
+agreement.  
+ 
+This ensures transparency and promotes mutual 
+understanding between the hire-purchase provider 
+and you, the hirer. You can request for a physical copy 
+of your hire-purchase agreement if this is preferred.
+7
+Will	hire-purchase	providers	continue	to	offer	a	
+rebate if the customer settles their loan early? 
+ 
+Hire-purchase providers will no longer offer rebates 
+at the point of early settlement to customers who 
+have contracted hire-purchase agreements under the 
+new provisions of the Hire-Purchase (Amendment) 
+Act 2026.  
+Under the Hire-Purchase Act 1967, when a customer 
+settles their hire-purchase loan early, the hire-purchase 
+providers typically waive the interest for the remaining 
+months in the financing tenure, which is termed as a 
+statutory rebate.  
+ 
+Under the Hire-Purchase (Amendment) Act 2026, 
+both fixed rate and variable rate loans will adopt 
+the reducing balance method, where interest is 
+calculated on the customer’s outstanding principal 
+balance. Once the customer pays off the outstanding 
+balance, no further interest charges subsequently 
+accrue. Hence, the need for such a waiver or rebate 
+does not arise.
+8
+How	do	the	changes 	to	the	Hire-Purchase 	Act	
+1967 affect existing hire-purchase agreements?  
+ 
+The changes made to the existing provisions under 
+the Hire-Purchase Act 1967 will only apply to new 
+hire-purchase agreements secured after the Hire-
+Purchase (Amendment) Act 2026 takes effect. 
+Existing hire-purchase agreements signed under the 
+Hire-Purchase Act 1967 will continue to follow the 
+original contractual terms and conditions. 
+Notwithstanding, the Hire-Purchase (Amendment) 
+Act 2026 provides the flexibility for you and your 
+hire-purchase provider to mutually agree to elect the 
+method of calculating the net balance due under the 
+hire-purchase agreement in accordance with the  
+Hire-Purchase (Amendment) Act 2026. This will 
+be subject to the readiness of the hire-purchase 
+provider to perform interest calculations using the 
+reducing balance method pending enhancements to 
+their existing systems.
+9 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+
+=== PAGE 10 ===
+10 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026
+9
+Why	are	the	changes 	to	the	Hire-Purchase 	Act	
+1967 being introduced now?
+To enhance protection for credit consumers, the 
+government, through the Ministry of Finance, has 
+introduced the Consumer Credit Act 2025. Adopting 
+a whole-of-government approach, KPDN also 
+undertook a review of the Hire-Purchase Act 1967 to 
+identify and address unfair practices towards credit 
+consumers. One key area of concern was the use 
+of the Rule of 78 method under the Hire-Purchase 
+Act 1967, which has been widely criticised for being 
+inequitable, particularly for customers who repay 
+their loans early. In response, many countries have 
+banned its use due to its inherent unfairness to credit 
+consumers and Malaysia is now aligned with global 
+best practices.
+10
+If I have a query or complaint on my dealings with 
+hire-purchase providers relating to the roll-out 
+of	the	new	provisions	under	the	Hire-Purchase	
+(Amendment) Act 2026, whom do I turn to? 
+ 
+If you have a query or complaint relating to the  
+roll-out of the new provisions under the Hire-Purchase  
+(Amendment) Act 2026, you may contact your hire-
+purchase provider directly to submit the query or 
+lodge the complaint.  
+ 
+KPDN remains as the regulatory and supervisory 
+authority of all hire-purchase agreements under the 
+Hire-Purchase (Amendment) Act 2026. Hence, if your 
+query or complaint with your hire-purchase provider 
+is not addressed, you may also reach out to KPDN 
+via KPDN’s e-complaint portal (https://eaduan.kpdn.
+gov.my/), toll-free number (1-800-886-800) or email 
+(e-aduan@kpdn.gov.my), or send a letter or visit the 
+nearest KPDN office. 
+If your hire-purchase provider is a banking institution, 
+for unresolved queries or complaints you may reach 
+out to the Financial Markets Ombudsman Service 
+(FMOS) (Click here to learn more about FMOS) or 
+BNMLINK.
+10 | Consumer Guide on the Hire-Purchase (Amendment) Act 2026

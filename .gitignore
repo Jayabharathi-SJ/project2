@@ -1,0 +1,36 @@
+# Virtual environments
+venv/
+.venv/
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Pytest & testing caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/
+
+# Local vector database storage
+qdrant_data/
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+
+# Sentence-transformer model cache (large binary files)
+model_cache/

@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+httpx
+pytest
+langgraph
+qdrant-client
+pypdf
+langgraph-checkpoint-postgres
+psycopg[binary]
+python-multipart
+sentence-transformers
