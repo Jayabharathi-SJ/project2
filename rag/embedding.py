@@ -1,17 +1,20 @@
 from typing import List, Optional
 import os
 
-from sentence_transformers import SentenceTransformer
-
 
 MODEL_NAME = "all-MiniLM-L6-v2"
-_model: Optional[SentenceTransformer] = None
+EMBEDDING_DIMENSION = 384
+_model: Optional[object] = None
 
 
-def get_embedding_model() -> SentenceTransformer:
-    """Lazily load and return the SentenceTransformer model."""
+def get_embedding_model():
+    """Lazily load and return the SentenceTransformer model with constrained CPU threads."""
     global _model
     if _model is None:
+        import torch
+        torch.set_num_threads(1)
+        from sentence_transformers import SentenceTransformer
+
         try:
             # Prioritize local cache to avoid online hub latency/timeouts
             _model = SentenceTransformer(MODEL_NAME, local_files_only=True)
@@ -34,4 +37,5 @@ def generate_embedding(text: str) -> List[float]:
 
 
 def get_embedding_dimension() -> int:
-    return get_embedding_model().get_sentence_embedding_dimension()
+    return EMBEDDING_DIMENSION
+

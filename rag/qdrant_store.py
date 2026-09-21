@@ -4,10 +4,10 @@ from typing import List, Tuple
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
-from rag.embedding import generate_embedding, get_embedding_dimension
 from rag.legal_document import LegalDocument
 
 COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "legal_documents")
+EMBEDDING_DIMENSION = 384
 
 
 def create_qdrant_client() -> QdrantClient:
@@ -53,7 +53,7 @@ def create_legal_collection(client: QdrantClient) -> None:
         client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=VectorParams(
-                size=get_embedding_dimension(),
+                size=EMBEDDING_DIMENSION,
                 distance=Distance.COSINE,
             ),
         )
@@ -63,6 +63,8 @@ def index_legal_documents(
     client: QdrantClient,
     documents: List[LegalDocument],
 ) -> int:
+    from rag.embedding import generate_embedding
+
     create_legal_collection(client)
 
     points = []
@@ -105,6 +107,8 @@ def search_legal_documents(
 
     if limit <= 0:
         raise ValueError("Limit must be greater than zero.")
+
+    from rag.embedding import generate_embedding
 
     query_vector = generate_embedding(query)
 
