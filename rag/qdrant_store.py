@@ -108,6 +108,24 @@ def search_legal_documents(
     if limit <= 0:
         raise ValueError("Limit must be greater than zero.")
 
+    # Guard: verify collection exists and has indexed points before loading heavy embedding model
+    try:
+        if not client.collection_exists(COLLECTION_NAME):
+            raise RuntimeError(
+                f"Qdrant collection '{COLLECTION_NAME}' does not exist."
+            )
+        info = client.get_collection(COLLECTION_NAME)
+        if (getattr(info, "points_count", None) or 0) == 0:
+            raise RuntimeError(
+                f"Qdrant collection '{COLLECTION_NAME}' has no indexed documents."
+            )
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to check Qdrant collection: {exc}"
+        ) from exc
+
     from rag.embedding import generate_embedding
 
     query_vector = generate_embedding(query)
