@@ -18,7 +18,6 @@ const API_BASE_URL = (() => {
   return "http://127.0.0.1:8000";
 })();
 
-
 // Presets data aligned with Malaysian corporate procurement scenarios
 const PRESETS = {
   sedan: {
@@ -58,7 +57,10 @@ const PRESETS = {
 
 let currentExtractedData = null;
 let currentAnalysisData = null;
+let currentScheduleData = [];
 let currentChartMode = "total";
+let loadingStepInterval = null;
+let activePresetKey = "sedan";
 
 // ---------------------------------------------------------------------------
 // Currency & Number Formatting Helpers
@@ -82,12 +84,87 @@ function formatPercent(val) {
 }
 
 // ---------------------------------------------------------------------------
+// Navigation Controller
+// ---------------------------------------------------------------------------
+
+function toggleMobileNav() {
+  const drawer = document.getElementById('mobile-nav-drawer');
+  const btn = document.getElementById('btn-mobile-nav');
+  if (!drawer) return;
+  const isOpen = drawer.classList.toggle('open');
+  if (btn) {
+    btn.classList.toggle('open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+}
+
+function closeMobileNav() {
+  const drawer = document.getElementById('mobile-nav-drawer');
+  const btn = document.getElementById('btn-mobile-nav');
+  if (drawer) drawer.classList.remove('open');
+  if (btn) {
+    btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function initNavigation() {
+  const navSections = [
+    { id: 'input-section', navId: 'nav-link-params' },
+    { id: 'summary-section', navId: 'nav-link-summary' },
+    { id: 'visuals-section', navId: 'nav-link-visuals' },
+    { id: 'deepdive-section', navId: 'nav-link-deepdive' }
+  ];
+
+  window.addEventListener('scroll', () => {
+    const scrollPos = window.scrollY + 140;
+    for (let i = navSections.length - 1; i >= 0; i--) {
+      const el = document.getElementById(navSections[i].id);
+      if (el && el.offsetTop <= scrollPos) {
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        const activeLink = document.getElementById(navSections[i].navId);
+        if (activeLink) activeLink.classList.add('active');
+        break;
+      }
+    }
+  }, { passive: true });
+}
+
+// ---------------------------------------------------------------------------
+// Live Backend Health Probe
+// ---------------------------------------------------------------------------
+
+async function checkBackendHealth() {
+  const badge = document.getElementById('agent-status-badge');
+  if (!badge) return;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(`${API_BASE_URL}/health/ready`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      badge.className = 'badge-tag pulse';
+      badge.innerText = 'FastAPI Connected';
+    } else {
+      badge.className = 'badge-tag pulse connecting';
+      badge.innerText = 'Backend Starting...';
+    }
+  } catch (err) {
+    badge.className = 'badge-tag pulse offline';
+    badge.innerText = 'Backend Offline';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Presets Loader
 // ---------------------------------------------------------------------------
 
 function loadPreset(key) {
   const preset = PRESETS[key];
   if (!preset) return;
+  activePresetKey = key;
 
   document.querySelectorAll('.preset-chip').forEach(btn => btn.classList.remove('active'));
   const activeBtn = document.getElementById(`preset-${key}`);
@@ -103,8 +180,60 @@ function loadPreset(key) {
   document.getElementById('lease_period_months').value = preset.leaseMonths;
   document.getElementById('cash_discount').value = preset.cashDiscount;
 
+  clearFieldErrors();
   // Re-run real backend analysis
   executeAnalysis();
+}
+
+// ---------------------------------------------------------------------------
+// Form Error Management & Reset
+// ---------------------------------------------------------------------------
+
+function clearFieldErrors() {
+  document.querySelectorAll('.field-error').forEach(el => {
+    el.innerText = '';
+    el.classList.remove('visible');
+  });
+  document.querySelectorAll('.form-control').forEach(el => {
+    el.classList.remove('is-invalid');
+  });
+}
+
+function setFieldError(fieldId, message) {
+  const input = document.getElementById(fieldId);
+  const errorEl = document.getElementById('error-' + fieldId);
+  if (input) input.classList.add('is-invalid');
+  if (errorEl) {
+    errorEl.innerText = message;
+    errorEl.classList.add('visible');
+  }
+}
+
+function initInputListeners() {
+  const fieldIds = [
+    'asset_name', 'asset_price', 'down_payment', 'hp_interest_rate',
+    'hp_period_months', 'hp_rate_type', 'cash_discount',
+    'lease_monthly_payment', 'lease_period_months'
+  ];
+  fieldIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', () => {
+        el.classList.remove('is-invalid');
+        const err = document.getElementById('error-' + id);
+        if (err) {
+          err.innerText = '';
+          err.classList.remove('visible');
+        }
+      });
+    }
+  });
+}
+
+function resetForm() {
+  clearFieldErrors();
+  dismissGlobalError();
+  loadPreset(activePresetKey || 'sedan');
 }
 
 // ---------------------------------------------------------------------------
@@ -142,13 +271,15 @@ function switchChartMode(mode) {
 // Global Alert & Error Handling
 // ---------------------------------------------------------------------------
 
-function showGlobalError(title, message) {
+function showGlobalError(title, message, showRetry = false) {
   const banner = document.getElementById('global-error-banner');
   const titleEl = document.getElementById('global-error-title');
   const msgEl = document.getElementById('global-error-message');
+  const retryBtn = document.getElementById('btn-error-retry');
   if (banner && titleEl && msgEl) {
     titleEl.innerText = title;
     msgEl.innerText = message;
+    if (retryBtn) retryBtn.style.display = showRetry ? 'inline-block' : 'none';
     banner.style.display = 'flex';
   }
 }
@@ -156,6 +287,11 @@ function showGlobalError(title, message) {
 function dismissGlobalError() {
   const banner = document.getElementById('global-error-banner');
   if (banner) banner.style.display = 'none';
+}
+
+function retryLastAnalysis() {
+  dismissGlobalError();
+  executeAnalysis();
 }
 
 // ---------------------------------------------------------------------------
@@ -331,6 +467,7 @@ function handleAnalyzeSubmit(e) {
 
 async function executeAnalysis() {
   dismissGlobalError();
+  clearFieldErrors();
 
   const assetName = document.getElementById('asset_name').value.trim();
   const assetPrice = parseFloat(document.getElementById('asset_price').value);
@@ -342,21 +479,43 @@ async function executeAnalysis() {
   const leaseMonths = parseInt(document.getElementById('lease_period_months').value, 10);
   const cashDiscount = parseFloat(document.getElementById('cash_discount').value) || 0;
 
+  let hasValidationError = false;
+
   // Immediate frontend validation guards
   if (!assetName) {
-    showGlobalError("Validation Error", "Asset name cannot be empty.");
-    return;
+    setFieldError('asset_name', 'Asset description is required.');
+    hasValidationError = true;
   }
   if (isNaN(assetPrice) || assetPrice <= 0) {
-    showGlobalError("Validation Error", "Asset price must be greater than zero.");
-    return;
+    setFieldError('asset_price', 'Asset price must be greater than RM 0.');
+    hasValidationError = true;
   }
   if (isNaN(downPayment) || downPayment < 0) {
-    showGlobalError("Validation Error", "Down payment cannot be negative.");
-    return;
+    setFieldError('down_payment', 'Down payment cannot be negative.');
+    hasValidationError = true;
+  } else if (!isNaN(assetPrice) && downPayment > assetPrice) {
+    setFieldError('down_payment', 'Down payment cannot exceed the asset price.');
+    hasValidationError = true;
   }
-  if (downPayment > assetPrice) {
-    showGlobalError("Validation Error", "Down payment cannot exceed the asset purchase price.");
+  if (isNaN(hpRate) || hpRate < 0) {
+    setFieldError('hp_interest_rate', 'Interest rate cannot be negative.');
+    hasValidationError = true;
+  }
+  if (isNaN(hpMonths) || hpMonths < 1) {
+    setFieldError('hp_period_months', 'Tenure must be at least 1 month.');
+    hasValidationError = true;
+  }
+  if (isNaN(leaseMonthly) || leaseMonthly <= 0) {
+    setFieldError('lease_monthly_payment', 'Monthly lease must be greater than RM 0.');
+    hasValidationError = true;
+  }
+  if (isNaN(leaseMonths) || leaseMonths < 1) {
+    setFieldError('lease_period_months', 'Lease term must be at least 1 month.');
+    hasValidationError = true;
+  }
+
+  if (hasValidationError) {
+    showGlobalError("Input Validation Error", "Please review the highlighted fields before proceeding.");
     return;
   }
 
@@ -374,40 +533,83 @@ async function executeAnalysis() {
     cash_discount: cashDiscount
   };
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s for Render cold-starts
+
   try {
     const response = await fetch(`${API_BASE_URL}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
     hideLoading();
 
     if (!response.ok) {
       let detailMsg = `Analysis request failed with status ${response.status}.`;
       try {
         const err = await response.json();
-        if (err.detail) {
-          detailMsg = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+        // Handle 422 validation messages
+        if (err.messages && Array.isArray(err.messages)) {
+          err.messages.forEach(msg => {
+            const parts = msg.split(':');
+            const field = parts[0].trim();
+            const reason = parts.slice(1).join(':').trim();
+            if (document.getElementById(field)) {
+              setFieldError(field, reason);
+            }
+          });
+          detailMsg = err.messages.join('; ');
+        } else if (err.detail) {
+          if (Array.isArray(err.detail)) {
+            err.detail.forEach(d => {
+              const field = d.loc && d.loc[d.loc.length - 1];
+              if (field && document.getElementById(field)) {
+                setFieldError(field, d.msg);
+              }
+            });
+            detailMsg = err.detail.map(d => `${d.loc ? d.loc.slice(1).join('.') : 'error'}: ${d.msg}`).join('; ');
+          } else {
+            detailMsg = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+          }
         }
       } catch (e) {
         // Fallback
       }
-      showGlobalError("Analysis Failed", detailMsg);
+      showGlobalError("Analysis Failed", detailMsg, true);
       return;
     }
 
     const data = await response.json();
     if (data.status === "success" && data.analysis) {
       currentAnalysisData = data.analysis;
+      if (data.thread_id) {
+        const threadBadge = document.getElementById('thread-id-badge');
+        if (threadBadge) threadBadge.innerText = data.thread_id;
+      }
       renderAnalysisResults(data.analysis, payload);
     } else {
-      showGlobalError("API Response Error", "Unexpected response payload from CFO backend.");
+      showGlobalError("API Response Error", "Unexpected response payload from CFO backend.", true);
     }
 
   } catch (error) {
+    clearTimeout(timeoutId);
     hideLoading();
-    showGlobalError("Connection Error", `Failed to reach FastAPI backend at ${API_BASE_URL}: ${error.message}. Ensure the backend server is running.`);
+    if (error.name === 'AbortError') {
+      showGlobalError(
+        "Request Timeout (Cold Start)",
+        "The backend server is spinning up from cold-start on Render (free instances sleep when idle). Please click Retry in a few moments.",
+        true
+      );
+    } else {
+      showGlobalError(
+        "Connection Error",
+        `Failed to reach FastAPI backend at ${API_BASE_URL}: ${error.message}. Please ensure the backend server is running.`,
+        true
+      );
+    }
   }
 }
 
@@ -541,7 +743,12 @@ function renderAnalysisResults(analysis, input) {
   // Render Detail Tabs
   renderComplianceTab(analysis.legal_validation || {}, input, true);
   renderRagEvidence(analysis.research_findings || [], analysis.legal_rules || []);
-  renderAmortizationSchedule(hp.amortization_schedule || []);
+
+  // Correct schedule array resolution (hp.schedule from backend, fallback to hp.amortization_schedule)
+  const scheduleData = hp.schedule || hp.amortization_schedule || [];
+  currentScheduleData = scheduleData;
+  renderAmortizationSchedule(scheduleData);
+
   renderAuditTrail(analysis.audit_trail || []);
   renderNarrativeTab(cfoRec, recName, lowestCost);
 }
@@ -650,7 +857,7 @@ function renderFinancialChart(analysis) {
   } else if (currentChartMode === "breakdown") {
     // Mode 2: Stacked Structure Breakdown
     const hpInterest = hp.total_interest || 0;
-    const hpDeposit = comp.upfront_outlay ? comp.upfront_outlay.hire_purchase : 24000;
+    const hpDeposit = (analysis.comparison && analysis.comparison.upfront_outlay) ? analysis.comparison.upfront_outlay.hire_purchase : 24000;
     const hpPrincipal = Math.max(0, hpCost - hpInterest - hpDeposit);
     const maxVal = Math.max(cashCost, hpCost, leaseCost, 1000) * 1.15;
 
@@ -741,7 +948,9 @@ function renderFinancialChart(analysis) {
   } else if (currentChartMode === "monthly") {
     // Mode 3: Monthly Cash Outflow
     const hpInst = hp.monthly_installment || 0;
-    const leaseRent = analysis.leasing ? (leaseCost / (currentAnalysisData.hire_purchase ? (analysis.hire_purchase.amortization_schedule ? analysis.hire_purchase.amortization_schedule.length : 60) : 60)) : 2100;
+    const leaseRent = analysis.leasing
+      ? (analysis.comparison ? analysis.comparison.leasing_cost / 60 : 2100)
+      : 2100;
     const maxVal = Math.max(hpInst, leaseRent, 500) * 1.3;
 
     const barW = 120;
@@ -797,7 +1006,9 @@ function renderFinancialChart(analysis) {
 // ---------------------------------------------------------------------------
 
 function renderComplianceTab(legal, input, passed) {
-  const eirCap = input.hp_period_months <= 60 ? (input.hp_rate_type === 'variable' ? 19.0 : 17.0) : (input.hp_rate_type === 'variable' ? 18.0 : 16.0);
+  const eirCap = input.hp_period_months <= 60
+    ? (input.hp_rate_type === 'variable' ? 19.0 : 17.0)
+    : (input.hp_rate_type === 'variable' ? 18.0 : 16.0);
   const isEirCompliant = input.hp_interest_rate <= eirCap;
   const minDeposit = input.asset_price * 0.10;
   const isDepositCompliant = input.down_payment >= minDeposit;
@@ -885,24 +1096,55 @@ function renderAmortizationSchedule(schedule) {
 
   if (!schedule || schedule.length === 0) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">No amortization schedule available.</td>`;
+    tr.innerHTML = `<td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No amortization schedule available.</td>`;
     tbody.appendChild(tr);
     return;
   }
 
-  // Display all months (scrollable up to 360 months)
+  // Display all months from schedule
   schedule.forEach(row => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.month}</td>
-      <td>${formatRM(row.beginning_balance || row.beginning)}</td>
-      <td>${formatRM(row.installment || row.monthly_payment)}</td>
-      <td>${formatRM(row.principal_repaid || row.principal)}</td>
-      <td>${formatRM(row.interest_charged || row.interest)}</td>
-      <td>${formatRM(row.ending_balance || row.ending)}</td>
+      <td>${formatRM(row.opening_balance ?? row.beginning_balance ?? row.beginning ?? 0)}</td>
+      <td>${formatRM(row.instalment ?? row.installment ?? row.monthly_payment ?? 0)}</td>
+      <td>${formatRM(row.principal ?? row.principal_repaid ?? 0)}</td>
+      <td>${formatRM(row.interest ?? row.interest_charged ?? 0)}</td>
+      <td>${formatRM(row.closing_balance ?? row.ending_balance ?? row.ending ?? 0)}</td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+function exportScheduleCSV() {
+  if (!currentScheduleData || currentScheduleData.length === 0) {
+    showGlobalError("Export Unavailable", "No amortization schedule available to export. Run an analysis first.");
+    return;
+  }
+
+  const headers = ["Month", "Opening Balance (RM)", "Instalment (RM)", "Principal Repaid (RM)", "Interest Charged (RM)", "Closing Balance (RM)"];
+  const csvRows = [headers.join(",")];
+
+  currentScheduleData.forEach(row => {
+    const m = row.month;
+    const b = (row.opening_balance ?? row.beginning_balance ?? row.beginning ?? 0).toFixed(2);
+    const inst = (row.instalment ?? row.installment ?? row.monthly_payment ?? 0).toFixed(2);
+    const p = (row.principal ?? row.principal_repaid ?? 0).toFixed(2);
+    const i = (row.interest ?? row.interest_charged ?? 0).toFixed(2);
+    const c = (row.closing_balance ?? row.ending_balance ?? row.ending ?? 0).toFixed(2);
+    csvRows.push([m, b, inst, p, i, c].join(","));
+  });
+
+  const csvContent = csvRows.join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `virtual_cfo_amortization_schedule_${Date.now()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function renderAuditTrail(trail) {
@@ -969,11 +1211,43 @@ function showLoading(msg) {
   const text = document.getElementById('loading-text');
   if (text) text.innerText = msg;
   if (overlay) overlay.style.display = 'flex';
+
+  const bullets = document.querySelectorAll('.step-bullet');
+  let currentStep = 0;
+  if (loadingStepInterval) clearInterval(loadingStepInterval);
+
+  bullets.forEach((b, i) => {
+    if (i === 0) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+
+  loadingStepInterval = setInterval(() => {
+    currentStep = (currentStep + 1) % bullets.length;
+    bullets.forEach((b, i) => {
+      if (i === currentStep) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+  }, 1200);
+
+  const submitBtn = document.getElementById('btn-submit-analyze');
+  const resetBtn = document.getElementById('btn-reset-form');
+  if (submitBtn) submitBtn.disabled = true;
+  if (resetBtn) resetBtn.disabled = true;
 }
 
 function hideLoading() {
   const overlay = document.getElementById('loading-overlay');
   if (overlay) overlay.style.display = 'none';
+
+  if (loadingStepInterval) {
+    clearInterval(loadingStepInterval);
+    loadingStepInterval = null;
+  }
+
+  const submitBtn = document.getElementById('btn-submit-analyze');
+  const resetBtn = document.getElementById('btn-reset-form');
+  if (submitBtn) submitBtn.disabled = false;
+  if (resetBtn) resetBtn.disabled = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -981,7 +1255,10 @@ function hideLoading() {
 // ---------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
+  initNavigation();
+  initInputListeners();
   initDropzone();
+  checkBackendHealth();
   // Automatically execute default analysis against live FastAPI backend
   executeAnalysis();
 });

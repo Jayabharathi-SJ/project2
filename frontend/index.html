@@ -28,7 +28,7 @@
   <div class="app-container">
 
     <!-- Top Navigation Header -->
-    <header class="top-nav">
+    <header class="top-nav" id="top-nav-bar">
       <div class="brand">
         <div class="brand-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -40,11 +40,35 @@
           <p class="brand-subtitle">Autonomous Multimodal Financial Research Agent</p>
         </div>
       </div>
+
+      <!-- Desktop Nav Links -->
+      <nav class="nav-links" id="desktop-nav" aria-label="Dashboard Navigation">
+        <a href="#input-section" class="nav-link active" id="nav-link-params">Parameters</a>
+        <a href="#summary-section" class="nav-link" id="nav-link-summary">Summary</a>
+        <a href="#visuals-section" class="nav-link" id="nav-link-visuals">Visuals</a>
+        <a href="#deepdive-section" class="nav-link" id="nav-link-deepdive">Deep Dive</a>
+      </nav>
+
       <div class="nav-badges">
-        <span class="badge-tag pulse" id="agent-status-badge">FastAPI Connected</span>
+        <span class="badge-tag pulse" id="agent-status-badge">Checking Backend...</span>
         <span class="badge-tag legal-tag">BNM Act 2026 Compliant</span>
+        <button type="button" class="mobile-nav-toggle" id="btn-mobile-nav" aria-label="Toggle navigation menu" aria-expanded="false" onclick="toggleMobileNav()">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
       </div>
     </header>
+
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-nav-drawer" id="mobile-nav-drawer" aria-hidden="true">
+      <nav class="mobile-nav-links">
+        <a href="#input-section" class="mobile-nav-link active" onclick="closeMobileNav()">Parameters & Ingestion</a>
+        <a href="#summary-section" class="mobile-nav-link" onclick="closeMobileNav()">Executive Summary</a>
+        <a href="#visuals-section" class="mobile-nav-link" onclick="closeMobileNav()">Visual Comparison</a>
+        <a href="#deepdive-section" class="mobile-nav-link" onclick="closeMobileNav()">Compliance & Deep Dive</a>
+      </nav>
+    </div>
 
     <!-- Global API / Error Banner -->
     <div id="global-error-banner" class="alert-banner error" style="display: none;">
@@ -53,14 +77,17 @@
         <div class="alert-title" id="global-error-title">Analysis Error</div>
         <div class="alert-message" id="global-error-message">Unable to connect to Virtual CFO backend.</div>
       </div>
-      <button type="button" class="alert-close" onclick="dismissGlobalError()">×</button>
+      <div class="alert-actions">
+        <button type="button" class="btn-retry-banner" id="btn-error-retry" onclick="retryLastAnalysis()" style="display: none;">Retry</button>
+        <button type="button" class="alert-close" onclick="dismissGlobalError()" aria-label="Dismiss error">×</button>
+      </div>
     </div>
 
     <!-- Main Content Layout -->
     <main class="main-grid">
 
       <!-- Left Column: Input Form & Multimodal Document Ingestion -->
-      <section class="glass-panel" id="input-panel">
+      <section class="glass-panel" id="input-section">
         <div class="panel-header">
           <div>
             <h2 class="panel-title">
@@ -129,6 +156,7 @@
           <div class="form-group">
             <label class="form-label" for="asset_name">Asset / Vehicle Description</label>
             <input type="text" id="asset_name" class="form-control" value="Toyota Camry 2.5V" required>
+            <span class="field-error" id="error-asset_name"></span>
           </div>
 
           <div class="form-row-2">
@@ -138,6 +166,7 @@
                 <span class="form-prefix">RM</span>
                 <input type="number" id="asset_price" class="form-control has-prefix" value="120000" min="1000" step="100" required>
               </div>
+              <span class="field-error" id="error-asset_price"></span>
             </div>
             <div class="form-group">
               <label class="form-label" for="down_payment">
@@ -148,6 +177,7 @@
                 <span class="form-prefix">RM</span>
                 <input type="number" id="down_payment" class="form-control has-prefix" value="24000" min="0" step="100" required>
               </div>
+              <span class="field-error" id="error-down_payment"></span>
             </div>
           </div>
 
@@ -158,10 +188,12 @@
                 <input type="number" id="hp_interest_rate" class="form-control has-suffix" value="4.50" min="0.0" max="25" step="0.05" required>
                 <span class="form-suffix">% p.a.</span>
               </div>
+              <span class="field-error" id="error-hp_interest_rate"></span>
             </div>
             <div class="form-group">
               <label class="form-label" for="hp_period_months">HP Tenure (Months)</label>
               <input type="number" id="hp_period_months" class="form-control" value="60" min="1" max="180" step="1" required>
+              <span class="field-error" id="error-hp_period_months"></span>
             </div>
           </div>
 
@@ -172,6 +204,7 @@
                 <option value="fixed" selected>Fixed Rate (Statutory Cap 17.00%)</option>
                 <option value="variable">Variable Rate (Statutory Cap 19.00%)</option>
               </select>
+              <span class="field-error" id="error-hp_rate_type"></span>
             </div>
             <div class="form-group">
               <label class="form-label" for="cash_discount">Cash Purchase Discount (RM)</label>
@@ -179,6 +212,7 @@
                 <span class="form-prefix">RM</span>
                 <input type="number" id="cash_discount" class="form-control has-prefix" value="3000" min="0" step="100">
               </div>
+              <span class="field-error" id="error-cash_discount"></span>
             </div>
           </div>
 
@@ -189,19 +223,30 @@
                 <span class="form-prefix">RM</span>
                 <input type="number" id="lease_monthly_payment" class="form-control has-prefix" value="2100" min="10" step="10" required>
               </div>
+              <span class="field-error" id="error-lease_monthly_payment"></span>
             </div>
             <div class="form-group">
               <label class="form-label" for="lease_period_months">Lease Term (Months)</label>
               <input type="number" id="lease_period_months" class="form-control" value="60" min="1" max="180" step="1" required>
+              <span class="field-error" id="error-lease_period_months"></span>
             </div>
           </div>
 
-          <button type="submit" class="btn-analyze" id="btn-submit-analyze">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            Execute Virtual CFO Analysis
-          </button>
+          <div class="form-actions-group">
+            <button type="submit" class="btn-analyze" id="btn-submit-analyze">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              <span>Execute Virtual CFO Analysis</span>
+            </button>
+            <button type="button" class="btn-reset" id="btn-reset-form" onclick="resetForm()" title="Reset all input fields to defaults">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              <span>Reset</span>
+            </button>
+          </div>
         </form>
       </section>
 
@@ -228,208 +273,214 @@
           </div>
         </div>
 
-        <!-- KPI Executive Metrics -->
-        <div class="kpi-grid" id="kpi-grid">
-          <div class="kpi-card highlight">
-            <div class="kpi-header-row">
-              <span class="kpi-label">Optimal Strategy</span>
-              <span class="engine-tag deterministic">Deterministic Math</span>
+        <!-- Section 1: Executive Summary (KPIs & Recommendation) -->
+        <div id="summary-section" class="dashboard-section">
+          <!-- KPI Executive Metrics -->
+          <div class="kpi-grid" id="kpi-grid">
+            <div class="kpi-card highlight">
+              <div class="kpi-header-row">
+                <span class="kpi-label">Optimal Strategy</span>
+                <span class="engine-tag deterministic">Deterministic Math</span>
+              </div>
+              <div class="kpi-value" id="kpi-optimal">Cash Purchase</div>
+              <div class="kpi-subtext positive" id="kpi-savings">Savings: RM 14,383.81 vs HP</div>
             </div>
-            <div class="kpi-value" id="kpi-optimal">Cash Purchase</div>
-            <div class="kpi-subtext positive" id="kpi-savings">Savings: RM 14,383.81 vs HP</div>
+
+            <div class="kpi-card">
+              <div class="kpi-header-row">
+                <span class="kpi-label">Lowest Total Outlay</span>
+                <span class="engine-tag deterministic">Exact Cost</span>
+              </div>
+              <div class="kpi-value" id="kpi-lowest-cost">RM 117,000.00</div>
+              <div class="kpi-subtext" id="kpi-asset-overview">Asset: Toyota Camry 2.5V</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header-row">
+                <span class="kpi-label">HP Monthly Commitment</span>
+                <span class="engine-tag deterministic">Reducing Bal.</span>
+              </div>
+              <div class="kpi-value" id="kpi-hp-monthly">RM 1,789.73</div>
+              <div class="kpi-subtext" id="kpi-hp-interest">Total Interest: RM 11,383.81</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header-row">
+                <span class="kpi-label">BNM 2026 Status</span>
+                <span class="engine-tag legal">Statutory</span>
+              </div>
+              <div class="kpi-value" id="kpi-bnm-status" style="color: var(--accent-emerald);">Passed</div>
+              <div class="kpi-subtext" id="kpi-bnm-cap">EIR within statutory cap</div>
+            </div>
           </div>
 
-          <div class="kpi-card">
-            <div class="kpi-header-row">
-              <span class="kpi-label">Lowest Total Outlay</span>
-              <span class="engine-tag deterministic">Exact Cost</span>
-            </div>
-            <div class="kpi-value" id="kpi-lowest-cost">RM 117,000.00</div>
-            <div class="kpi-subtext" id="kpi-asset-overview">Asset: Toyota Camry 2.5V</div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-header-row">
-              <span class="kpi-label">HP Monthly Commitment</span>
-              <span class="engine-tag deterministic">Reducing Bal.</span>
-            </div>
-            <div class="kpi-value" id="kpi-hp-monthly">RM 1,789.73</div>
-            <div class="kpi-subtext" id="kpi-hp-interest">Total Interest: RM 11,383.81</div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-header-row">
-              <span class="kpi-label">BNM 2026 Status</span>
-              <span class="engine-tag legal">Statutory</span>
-            </div>
-            <div class="kpi-value" id="kpi-bnm-status" style="color: var(--accent-emerald);">Passed</div>
-            <div class="kpi-subtext" id="kpi-bnm-cap">EIR within statutory cap</div>
-          </div>
-        </div>
-
-        <!-- Recommendation Hero Banner -->
-        <div class="recommendation-banner" id="recommendation-banner">
-          <div class="rec-title-group">
-            <div class="banner-top-tags">
-              <div class="rec-badge" id="banner-badge">Official CFO Recommendation</div>
-              <span class="engine-tag deterministic">Deterministic Calculation Result</span>
-              <span class="engine-tag llm">AI Executive Narrative</span>
-            </div>
-            <h3 class="rec-heading" id="banner-heading">Cash Purchase delivers the lowest total ownership cost</h3>
-            <p class="rec-description" id="banner-desc">
-              Deterministic calculations confirm Cash Purchase provides the most cost-effective capital allocation under Malaysian Hire-Purchase Act 2026 regulations.
-            </p>
-            <div class="rec-disclaimer">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-              Financial ranking is strictly determined by deterministic formulas. The LLM narrative provides contextual synthesis and cannot alter numerical outcomes.
-            </div>
-          </div>
-        </div>
-
-        <!-- Interactive Financial Comparison Visualizations -->
-        <div class="glass-panel chart-panel" id="chart-panel">
-          <div class="panel-header chart-header">
-            <div>
-              <h3 class="panel-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="20" x2="18" y2="10"/>
-                  <line x1="12" y1="20" x2="12" y2="4"/>
-                  <line x1="6" y1="20" x2="6" y2="14"/>
+          <!-- Recommendation Hero Banner -->
+          <div class="recommendation-banner" id="recommendation-banner">
+            <div class="rec-title-group">
+              <div class="banner-top-tags">
+                <div class="rec-badge" id="banner-badge">Official CFO Recommendation</div>
+                <span class="engine-tag deterministic">Deterministic Calculation Result</span>
+                <span class="engine-tag llm">AI Executive Narrative</span>
+              </div>
+              <h3 class="rec-heading" id="banner-heading">Cash Purchase delivers the lowest total ownership cost</h3>
+              <p class="rec-description" id="banner-desc">
+                Deterministic calculations confirm Cash Purchase provides the most cost-effective capital allocation under Malaysian Hire-Purchase Act 2026 regulations.
+              </p>
+              <div class="rec-disclaimer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
                 </svg>
-                Financial Comparison Visualizations
-              </h3>
-              <p class="panel-subtitle">Deterministic comparative metrics across acquisition options</p>
+                Financial ranking is strictly determined by deterministic formulas. The LLM narrative provides contextual synthesis and cannot alter numerical outcomes.
+              </div>
             </div>
-            <div class="chart-toggles">
-              <button type="button" class="chart-toggle-btn active" id="btn-chart-total" onclick="switchChartMode('total')">Total Outlay</button>
-              <button type="button" class="chart-toggle-btn" id="btn-chart-breakdown" onclick="switchChartMode('breakdown')">Cost Breakdown</button>
-              <button type="button" class="chart-toggle-btn" id="btn-chart-monthly" onclick="switchChartMode('monthly')">Monthly Outflow</button>
-            </div>
-          </div>
-          <div class="chart-wrapper" id="chart-wrapper">
-            <svg id="financial-chart-svg" class="financial-chart" viewBox="0 0 760 260" preserveAspectRatio="xMidYMid meet"></svg>
           </div>
         </div>
 
-        <!-- Option Comparison Grid -->
-        <div class="comparison-grid" id="comparison-grid">
-
-          <!-- Option 1: Cash Purchase -->
-          <article class="option-card winner" id="card-cash">
-            <div class="option-card-header">
+        <!-- Section 2: Visualizations & Option Comparison Grid -->
+        <div id="visuals-section" class="dashboard-section">
+          <!-- Interactive Financial Comparison Visualizations -->
+          <div class="glass-panel chart-panel" id="chart-panel">
+            <div class="panel-header chart-header">
               <div>
-                <h3 class="option-name">Cash Purchase</h3>
-                <span class="engine-tag deterministic">100% Deterministic</span>
+                <h3 class="panel-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                  Financial Comparison Visualizations
+                </h3>
+                <p class="panel-subtitle">Deterministic comparative metrics across acquisition options</p>
               </div>
-              <span class="winner-pill" id="badge-cash">Recommended</span>
+              <div class="chart-toggles">
+                <button type="button" class="chart-toggle-btn active" id="btn-chart-total" onclick="switchChartMode('total')">Total Outlay</button>
+                <button type="button" class="chart-toggle-btn" id="btn-chart-breakdown" onclick="switchChartMode('breakdown')">Cost Breakdown</button>
+                <button type="button" class="chart-toggle-btn" id="btn-chart-monthly" onclick="switchChartMode('monthly')">Monthly Outflow</button>
+              </div>
             </div>
-            <div class="option-price-tag">
-              <div class="option-price" id="cost-cash">RM 117,000.00</div>
-              <div class="option-price-sub">Total Lifetime Cost</div>
+            <div class="chart-wrapper" id="chart-wrapper">
+              <svg id="financial-chart-svg" class="financial-chart" viewBox="0 0 760 260" preserveAspectRatio="xMidYMid meet"></svg>
             </div>
-            <ul class="option-features-list">
-              <li class="option-feature-item">
-                <span>Net Upfront Outlay</span>
-                <span class="option-feature-value" id="upfront-cash">RM 117,000.00</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Monthly Impact</span>
-                <span class="option-feature-value">RM 0.00 / month</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Financing Interest</span>
-                <span class="option-feature-value">RM 0.00 (Zero Charge)</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Liquidity Retained</span>
-                <span class="option-feature-value" id="liquidity-cash">RM 0.00 (100% Deployed)</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Asset Ownership</span>
-                <span class="option-feature-value" id="ownership-cash">Full ownership Day 1</span>
-              </li>
-            </ul>
-          </article>
+          </div>
 
-          <!-- Option 2: Hire Purchase -->
-          <article class="option-card" id="card-hp">
-            <div class="option-card-header">
-              <div>
-                <h3 class="option-name">Hire Purchase</h3>
-                <span class="engine-tag deterministic">Reducing Balance</span>
-              </div>
-              <span class="winner-pill" id="badge-hp" style="display:none;">Recommended</span>
-            </div>
-            <div class="option-price-tag">
-              <div class="option-price" id="cost-hp">RM 131,383.81</div>
-              <div class="option-price-sub">Total Lifetime Cost</div>
-            </div>
-            <ul class="option-features-list">
-              <li class="option-feature-item">
-                <span>Upfront Deposit</span>
-                <span class="option-feature-value" id="upfront-hp">RM 24,000.00</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Monthly Instalment</span>
-                <span class="option-feature-value" id="monthly-hp">RM 1,789.73</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Total Financing Interest</span>
-                <span class="option-feature-value" id="interest-hp">RM 11,383.81</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Liquidity Retained</span>
-                <span class="option-feature-value" id="liquidity-hp">RM 93,000.00</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Asset Ownership</span>
-                <span class="option-feature-value" id="ownership-hp">Transfers after final instalment</span>
-              </li>
-            </ul>
-          </article>
+          <!-- Option Comparison Grid -->
+          <div class="comparison-grid" id="comparison-grid">
 
-          <!-- Option 3: Operating Lease -->
-          <article class="option-card" id="card-lease">
-            <div class="option-card-header">
-              <div>
-                <h3 class="option-name">Operating Lease</h3>
-                <span class="engine-tag deterministic">Rental Schedule</span>
+            <!-- Option 1: Cash Purchase -->
+            <article class="option-card winner" id="card-cash">
+              <div class="option-card-header">
+                <div>
+                  <h3 class="option-name">Cash Purchase</h3>
+                  <span class="engine-tag deterministic">100% Deterministic</span>
+                </div>
+                <span class="winner-pill" id="badge-cash">Recommended</span>
               </div>
-              <span class="winner-pill" id="badge-lease" style="display:none;">Recommended</span>
-            </div>
-            <div class="option-price-tag">
-              <div class="option-price" id="cost-lease">RM 126,000.00</div>
-              <div class="option-price-sub">Total Rental Cost</div>
-            </div>
-            <ul class="option-features-list">
-              <li class="option-feature-item">
-                <span>Initial Rental Outlay</span>
-                <span class="option-feature-value" id="upfront-lease">RM 2,100.00</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Monthly Rental</span>
-                <span class="option-feature-value" id="monthly-lease">RM 2,100.00</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Financing Interest</span>
-                <span class="option-feature-value">Not Applicable</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Liquidity Retained</span>
-                <span class="option-feature-value" id="liquidity-lease">RM 114,900.00</span>
-              </li>
-              <li class="option-feature-item">
-                <span>Asset Ownership</span>
-                <span class="option-feature-value" id="ownership-lease">Returned at end of term</span>
-              </li>
-            </ul>
-          </article>
+              <div class="option-price-tag">
+                <div class="option-price" id="cost-cash">RM 117,000.00</div>
+                <div class="option-price-sub">Total Lifetime Cost</div>
+              </div>
+              <ul class="option-features-list">
+                <li class="option-feature-item">
+                  <span>Net Upfront Outlay</span>
+                  <span class="option-feature-value" id="upfront-cash">RM 117,000.00</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Monthly Impact</span>
+                  <span class="option-feature-value">RM 0.00 / month</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Financing Interest</span>
+                  <span class="option-feature-value">RM 0.00 (Zero Charge)</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Liquidity Retained</span>
+                  <span class="option-feature-value" id="liquidity-cash">RM 0.00 (100% Deployed)</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Asset Ownership</span>
+                  <span class="option-feature-value" id="ownership-cash">Full ownership Day 1</span>
+                </li>
+              </ul>
+            </article>
+
+            <!-- Option 2: Hire Purchase -->
+            <article class="option-card" id="card-hp">
+              <div class="option-card-header">
+                <div>
+                  <h3 class="option-name">Hire Purchase</h3>
+                  <span class="engine-tag deterministic">Reducing Balance</span>
+                </div>
+                <span class="winner-pill" id="badge-hp" style="display:none;">Recommended</span>
+              </div>
+              <div class="option-price-tag">
+                <div class="option-price" id="cost-hp">RM 131,383.81</div>
+                <div class="option-price-sub">Total Lifetime Cost</div>
+              </div>
+              <ul class="option-features-list">
+                <li class="option-feature-item">
+                  <span>Upfront Deposit</span>
+                  <span class="option-feature-value" id="upfront-hp">RM 24,000.00</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Monthly Instalment</span>
+                  <span class="option-feature-value" id="monthly-hp">RM 1,789.73</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Total Financing Interest</span>
+                  <span class="option-feature-value" id="interest-hp">RM 11,383.81</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Liquidity Retained</span>
+                  <span class="option-feature-value" id="liquidity-hp">RM 93,000.00</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Asset Ownership</span>
+                  <span class="option-feature-value" id="ownership-hp">Transfers after final instalment</span>
+                </li>
+              </ul>
+            </article>
+
+            <!-- Option 3: Operating Lease -->
+            <article class="option-card" id="card-lease">
+              <div class="option-card-header">
+                <div>
+                  <h3 class="option-name">Operating Lease</h3>
+                  <span class="engine-tag deterministic">Rental Schedule</span>
+                </div>
+                <span class="winner-pill" id="badge-lease" style="display:none;">Recommended</span>
+              </div>
+              <div class="option-price-tag">
+                <div class="option-price" id="cost-lease">RM 126,000.00</div>
+                <div class="option-price-sub">Total Rental Cost</div>
+              </div>
+              <ul class="option-features-list">
+                <li class="option-feature-item">
+                  <span>Initial Rental Outlay</span>
+                  <span class="option-feature-value" id="upfront-lease">RM 2,100.00</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Monthly Rental</span>
+                  <span class="option-feature-value" id="monthly-lease">RM 2,100.00</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Financing Interest</span>
+                  <span class="option-feature-value">Not Applicable</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Liquidity Retained</span>
+                  <span class="option-feature-value" id="liquidity-lease">RM 114,900.00</span>
+                </li>
+                <li class="option-feature-item">
+                  <span>Asset Ownership</span>
+                  <span class="option-feature-value" id="ownership-lease">Returned at end of term</span>
+                </li>
+              </ul>
+            </article>
+          </div>
         </div>
 
-        <!-- Detail Tabs: Compliance, RAG Evidence, Amortization, Audit Trail, Narrative -->
-        <div class="glass-panel" id="deep-dive-panel">
+        <!-- Section 3: Deep Dive Tabs Panel -->
+        <div class="glass-panel" id="deepdive-section">
           <nav class="tab-nav">
             <button type="button" class="tab-btn active" id="tab-btn-compliance" onclick="switchTab('compliance')">BNM 2026 Compliance</button>
             <button type="button" class="tab-btn" id="tab-btn-rag" onclick="switchTab('rag')">RAG Statutory Evidence</button>
@@ -501,8 +552,18 @@
           <!-- Tab 3: Amortization Schedule Table -->
           <div class="tab-pane" id="tab-amort">
             <div class="table-meta-bar">
-              <span>Showing deterministic Reducing Balance amortization</span>
-              <span class="engine-tag deterministic">Exact Monthly Schedule</span>
+              <div class="table-meta-info">
+                <span>Showing deterministic Reducing Balance amortization</span>
+                <span class="engine-tag deterministic">Exact Monthly Schedule</span>
+              </div>
+              <button type="button" class="btn-secondary-action" id="btn-export-csv" onclick="exportScheduleCSV()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Export CSV</span>
+              </button>
             </div>
             <div class="table-wrapper">
               <table class="amort-table" id="amort-table">
@@ -525,6 +586,10 @@
 
           <!-- Tab 4: Multi-Agent Audit Trail -->
           <div class="tab-pane" id="tab-audit">
+            <div class="audit-session-bar">
+              <span class="audit-session-label">PostgreSQL Execution Thread:</span>
+              <code class="thread-id-badge" id="thread-id-badge">session-active</code>
+            </div>
             <div class="audit-timeline" id="audit-timeline">
               <!-- Populated dynamically via JS -->
             </div>
