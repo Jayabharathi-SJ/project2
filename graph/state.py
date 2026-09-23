@@ -50,6 +50,14 @@ class CFOState(TypedDict, total=False):
     # Warnings — non-fatal issues that do not block the analysis
     warnings: List[str]
 
+    # Independent Validation Agent (Req 12)
+    independent_validation: Dict[str, Any]
+
+    # Multimodal document extraction context (Req 3)
+    document_extraction: Optional[Dict[str, Any]]
+    thread_id: Optional[str]
+
     # Workflow tracking
     current_step: str
-    errors: List[str]
+    errors: List[str]
+

@@ -43,6 +43,34 @@ def create_async_checkpointer():
     return AsyncPostgresSaver.from_conn_string(get_postgres_uri())
 
 
+@asynccontextmanager
+async def create_resilient_async_checkpointer():
+    """
+    Connect to PostgreSQL if reachable; if unavailable, yield an in-memory checkpointer
+    and set is_persisted=False so the system never pretends persistence succeeded (Req 14 & 15).
+    """
+    from langgraph.checkpoint.memory import MemorySaver
+
+    uri = os.getenv("POSTGRES_URI")
+    if uri:
+        try:
+            checkpointer = AsyncPostgresSaver.from_conn_string(uri)
+            async with checkpointer as cp:
+                # Ensure checkpointer schema is set up if possible
+                try:
+                    await cp.setup()
+                except Exception:
+                    pass
+                yield cp, True
+                return
+        except Exception:
+            pass
+
+    # Safe fallback: in-memory state tracking, explicitly marking persistence as False
+    yield MemorySaver(), False
+
+
+
 def check_postgres_connection(timeout_seconds: int = 3) -> Tuple[bool, str]:
     """
     Fast, non-blocking health check for PostgreSQL connectivity.

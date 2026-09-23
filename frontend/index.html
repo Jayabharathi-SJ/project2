@@ -51,7 +51,7 @@
 
       <div class="nav-badges">
         <span class="badge-tag pulse" id="agent-status-badge">Checking Backend...</span>
-        <span class="badge-tag legal-tag">BNM Act 2026 Compliant</span>
+        <span class="badge-tag" id="nav-legal-badge">Awaiting Analysis</span>
         <button type="button" class="mobile-nav-toggle" id="btn-mobile-nav" aria-label="Toggle navigation menu" aria-expanded="false" onclick="toggleMobileNav()">
           <span class="hamburger-bar"></span>
           <span class="hamburger-bar"></span>
@@ -282,8 +282,8 @@
                 <span class="kpi-label">Optimal Strategy</span>
                 <span class="engine-tag deterministic">Deterministic Math</span>
               </div>
-              <div class="kpi-value" id="kpi-optimal">Cash Purchase</div>
-              <div class="kpi-subtext positive" id="kpi-savings">Savings: RM 14,383.81 vs HP</div>
+              <div class="kpi-value" id="kpi-optimal">--</div>
+              <div class="kpi-subtext" id="kpi-savings">Awaiting analysis execution</div>
             </div>
 
             <div class="kpi-card">
@@ -291,8 +291,8 @@
                 <span class="kpi-label">Lowest Total Outlay</span>
                 <span class="engine-tag deterministic">Exact Cost</span>
               </div>
-              <div class="kpi-value" id="kpi-lowest-cost">RM 117,000.00</div>
-              <div class="kpi-subtext" id="kpi-asset-overview">Asset: Toyota Camry 2.5V</div>
+              <div class="kpi-value" id="kpi-lowest-cost">--</div>
+              <div class="kpi-subtext" id="kpi-asset-overview">Asset: Not yet evaluated</div>
             </div>
 
             <div class="kpi-card">
@@ -300,8 +300,8 @@
                 <span class="kpi-label">HP Monthly Commitment</span>
                 <span class="engine-tag deterministic">Reducing Bal.</span>
               </div>
-              <div class="kpi-value" id="kpi-hp-monthly">RM 1,789.73</div>
-              <div class="kpi-subtext" id="kpi-hp-interest">Total Interest: RM 11,383.81</div>
+              <div class="kpi-value" id="kpi-hp-monthly">--</div>
+              <div class="kpi-subtext" id="kpi-hp-interest">Total Interest: --</div>
             </div>
 
             <div class="kpi-card">
@@ -309,8 +309,8 @@
                 <span class="kpi-label">BNM 2026 Status</span>
                 <span class="engine-tag legal">Statutory</span>
               </div>
-              <div class="kpi-value" id="kpi-bnm-status" style="color: var(--accent-emerald);">Passed</div>
-              <div class="kpi-subtext" id="kpi-bnm-cap">EIR within statutory cap</div>
+              <div class="kpi-value" id="kpi-bnm-status" style="color: var(--text-secondary);">--</div>
+              <div class="kpi-subtext" id="kpi-bnm-cap">Statutory EIR & deposit check</div>
             </div>
           </div>
 
@@ -318,13 +318,13 @@
           <div class="recommendation-banner" id="recommendation-banner">
             <div class="rec-title-group">
               <div class="banner-top-tags">
-                <div class="rec-badge" id="banner-badge">Official CFO Recommendation</div>
-                <span class="engine-tag deterministic">Deterministic Calculation Result</span>
-                <span class="engine-tag llm">AI Executive Narrative</span>
+                <div class="rec-badge" id="banner-badge">Virtual CFO Ready</div>
+                <span class="engine-tag deterministic">Deterministic Financial Engine</span>
+                <span class="engine-tag llm">AI Executive Synthesis</span>
               </div>
-              <h3 class="rec-heading" id="banner-heading">Cash Purchase delivers the lowest total ownership cost</h3>
+              <h3 class="rec-heading" id="banner-heading">Ready for Virtual CFO Analysis</h3>
               <p class="rec-description" id="banner-desc">
-                Deterministic calculations confirm Cash Purchase provides the most cost-effective capital allocation under Malaysian Hire-Purchase Act 2026 regulations.
+                Configure acquisition parameters on the left or upload a quotation PDF, then click "Execute Virtual CFO Analysis" to generate deterministic financial calculations, statutory legal compliance validation, and executive recommendations.
               </p>
               <div class="rec-disclaimer">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -359,7 +359,9 @@
               </div>
             </div>
             <div class="chart-wrapper" id="chart-wrapper">
-              <svg id="financial-chart-svg" class="financial-chart" viewBox="0 0 760 260" preserveAspectRatio="xMidYMid meet"></svg>
+              <svg id="financial-chart-svg" class="financial-chart" viewBox="0 0 760 260" preserveAspectRatio="xMidYMid meet">
+                <text x="380" y="130" text-anchor="middle" fill="#64748b" font-size="14">Enter parameters and execute analysis to view financial comparison</text>
+              </svg>
             </div>
           </div>
 
@@ -367,22 +369,22 @@
           <div class="comparison-grid" id="comparison-grid">
 
             <!-- Option 1: Cash Purchase -->
-            <article class="option-card winner" id="card-cash">
+            <article class="option-card" id="card-cash">
               <div class="option-card-header">
                 <div>
                   <h3 class="option-name">Cash Purchase</h3>
                   <span class="engine-tag deterministic">100% Deterministic</span>
                 </div>
-                <span class="winner-pill" id="badge-cash">Recommended</span>
+                <span class="winner-pill" id="badge-cash" style="display:none;">Recommended</span>
               </div>
               <div class="option-price-tag">
-                <div class="option-price" id="cost-cash">RM 117,000.00</div>
+                <div class="option-price" id="cost-cash">--</div>
                 <div class="option-price-sub">Total Lifetime Cost</div>
               </div>
               <ul class="option-features-list">
                 <li class="option-feature-item">
                   <span>Net Upfront Outlay</span>
-                  <span class="option-feature-value" id="upfront-cash">RM 117,000.00</span>
+                  <span class="option-feature-value" id="upfront-cash">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Monthly Impact</span>
@@ -394,7 +396,7 @@
                 </li>
                 <li class="option-feature-item">
                   <span>Liquidity Retained</span>
-                  <span class="option-feature-value" id="liquidity-cash">RM 0.00 (100% Deployed)</span>
+                  <span class="option-feature-value" id="liquidity-cash">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Asset Ownership</span>
@@ -413,25 +415,25 @@
                 <span class="winner-pill" id="badge-hp" style="display:none;">Recommended</span>
               </div>
               <div class="option-price-tag">
-                <div class="option-price" id="cost-hp">RM 131,383.81</div>
+                <div class="option-price" id="cost-hp">--</div>
                 <div class="option-price-sub">Total Lifetime Cost</div>
               </div>
               <ul class="option-features-list">
                 <li class="option-feature-item">
                   <span>Upfront Deposit</span>
-                  <span class="option-feature-value" id="upfront-hp">RM 24,000.00</span>
+                  <span class="option-feature-value" id="upfront-hp">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Monthly Instalment</span>
-                  <span class="option-feature-value" id="monthly-hp">RM 1,789.73</span>
+                  <span class="option-feature-value" id="monthly-hp">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Total Financing Interest</span>
-                  <span class="option-feature-value" id="interest-hp">RM 11,383.81</span>
+                  <span class="option-feature-value" id="interest-hp">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Liquidity Retained</span>
-                  <span class="option-feature-value" id="liquidity-hp">RM 93,000.00</span>
+                  <span class="option-feature-value" id="liquidity-hp">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Asset Ownership</span>
@@ -450,17 +452,17 @@
                 <span class="winner-pill" id="badge-lease" style="display:none;">Recommended</span>
               </div>
               <div class="option-price-tag">
-                <div class="option-price" id="cost-lease">RM 126,000.00</div>
+                <div class="option-price" id="cost-lease">--</div>
                 <div class="option-price-sub">Total Rental Cost</div>
               </div>
               <ul class="option-features-list">
                 <li class="option-feature-item">
                   <span>Initial Rental Outlay</span>
-                  <span class="option-feature-value" id="upfront-lease">RM 2,100.00</span>
+                  <span class="option-feature-value" id="upfront-lease">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Monthly Rental</span>
-                  <span class="option-feature-value" id="monthly-lease">RM 2,100.00</span>
+                  <span class="option-feature-value" id="monthly-lease">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Financing Interest</span>
@@ -468,7 +470,7 @@
                 </li>
                 <li class="option-feature-item">
                   <span>Liquidity Retained</span>
-                  <span class="option-feature-value" id="liquidity-lease">RM 114,900.00</span>
+                  <span class="option-feature-value" id="liquidity-lease">--</span>
                 </li>
                 <li class="option-feature-item">
                   <span>Asset Ownership</span>
@@ -492,52 +494,8 @@
           <!-- Tab 1: BNM 2026 Compliance -->
           <div class="tab-pane active" id="tab-compliance">
             <div class="compliance-checklist" id="compliance-checklist">
-              <div class="compliance-item passed" id="compliance-item-eir">
-                <svg class="compliance-icon success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div class="compliance-content">
-                  <h4>Statutory EIR Cap Compliance</h4>
-                  <p id="compliance-eir-text">EIR of 4.50% is strictly below the statutory cap of 17.00% per annum for tenures up to 60 months.</p>
-                  <div class="compliance-legal-source">Source: BNM Hire-Purchase (Amendment) Act 2026 Consumer Guide, Section 4</div>
-                </div>
-              </div>
-
-              <div class="compliance-item passed" id="compliance-item-deposit">
-                <svg class="compliance-icon success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div class="compliance-content">
-                  <h4>Statutory Minimum Deposit (Section 31)</h4>
-                  <p id="compliance-deposit-text">Down payment satisfies the mandatory minimum of 10% under Section 31 of the Hire-Purchase Act 1967.</p>
-                  <div class="compliance-legal-source">Source: Malaysian Hire-Purchase Act 1967 s. 31 & BNM 2026 Guidelines</div>
-                </div>
-              </div>
-
-              <div class="compliance-item passed">
-                <svg class="compliance-icon success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div class="compliance-content">
-                  <h4>Mandatory Reducing Balance Method Applied</h4>
-                  <p>Rule of 78 flat-rate methodology has been superseded by the reducing balance amortisation where interest accrues strictly on the unexpired principal.</p>
-                  <div class="compliance-legal-source">Source: BNM HP 2026 Highlight 1 (Effective 1 July 2026)</div>
-                </div>
-              </div>
-
-              <div class="compliance-item passed">
-                <svg class="compliance-icon success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div class="compliance-content">
-                  <h4>Early Settlement Rebate Guaranteed</h4>
-                  <p>In the event of early settlement, statutory unaccrued interest rebate is computed directly from remaining amortised principal without arbitrary penalties.</p>
-                  <div class="compliance-legal-source">Source: BNM HP 2026 Highlight 3</div>
-                </div>
+              <div style="text-align: center; color: var(--text-muted); padding: 28px;">
+                No legal validation executed yet. Run an analysis above to verify statutory compliance under the Malaysian Hire-Purchase Act 1967 and 2026 Regulations.
               </div>
             </div>
           </div>
@@ -545,7 +503,9 @@
           <!-- Tab 2: RAG Statutory Evidence -->
           <div class="tab-pane" id="tab-rag">
             <div class="rag-evidence-container" id="rag-evidence-container">
-              <!-- Dynamically populated via JS -->
+              <div style="text-align: center; color: var(--text-muted); padding: 28px;">
+                No legal research executed yet. Run an analysis above to retrieve authoritative statutory context from the Qdrant vector store.
+              </div>
             </div>
           </div>
 
@@ -553,7 +513,7 @@
           <div class="tab-pane" id="tab-amort">
             <div class="table-meta-bar">
               <div class="table-meta-info">
-                <span>Showing deterministic Reducing Balance amortization</span>
+                <span>Deterministic Reducing Balance Amortization</span>
                 <span class="engine-tag deterministic">Exact Monthly Schedule</span>
               </div>
               <button type="button" class="btn-secondary-action" id="btn-export-csv" onclick="exportScheduleCSV()">
@@ -578,7 +538,9 @@
                   </tr>
                 </thead>
                 <tbody id="amort-table-body">
-                  <!-- Populated dynamically via JS -->
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No amortization schedule available. Execute an analysis above.</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -588,17 +550,19 @@
           <div class="tab-pane" id="tab-audit">
             <div class="audit-session-bar">
               <span class="audit-session-label">PostgreSQL Execution Thread:</span>
-              <code class="thread-id-badge" id="thread-id-badge">session-active</code>
+              <code class="thread-id-badge" id="thread-id-badge">session-standby</code>
             </div>
             <div class="audit-timeline" id="audit-timeline">
-              <!-- Populated dynamically via JS -->
+              <div style="text-align: center; color: var(--text-muted); padding: 28px;">
+                No audit trail recorded. Execute an analysis above to trace the 10-stage execution pipeline.
+              </div>
             </div>
           </div>
 
           <!-- Tab 5: CFO Narrative & Sensitivity -->
           <div class="tab-pane" id="tab-narrative">
             <div class="narrative-card" id="narrative-content">
-              Loading executive narrative...
+              <p style="color: var(--text-muted); margin: 0;">No executive rationale generated yet. Execute an analysis to review deterministic CFO recommendations and AI synthesis.</p>
             </div>
           </div>
 

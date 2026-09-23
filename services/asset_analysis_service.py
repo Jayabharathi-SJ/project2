@@ -12,7 +12,7 @@ if sys.platform == "win32":
     )
 
 
-from database.checkpointer import create_async_checkpointer
+from database.checkpointer import create_resilient_async_checkpointer
 from graph.workflow import build_cfo_graph
 
 
@@ -27,6 +27,7 @@ async def analyze_asset_financial_options_async(
     cash_discount: Decimal = Decimal("0.00"),
     thread_id: Optional[str] = None,
     hp_rate_type: str = "fixed",
+    document_extraction: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
 
     # Upfront financial input validation
@@ -53,7 +54,7 @@ async def analyze_asset_financial_options_async(
 
     # Create a unique thread ID if not provided
     if thread_id is None:
-        thread_id = f"analysis-{uuid.uuid4()}"
+        thread_id = f"cfo-{uuid.uuid4().hex[:12]}"
 
     # Initial LangGraph state
     initial_state = {
@@ -66,10 +67,21 @@ async def analyze_asset_financial_options_async(
         "lease_period_months": lease_period_months,
         "lease_monthly_payment": lease_monthly_payment,
         "cash_discount": cash_discount,
+        "document_extraction": document_extraction,
+        "thread_id": thread_id,
         "current_step": "analysis_started",
         "errors": [],
+        "warnings": [],
+        "audit_trail": [
+            {
+                "agent": "orchestrator",
+                "action": "analysis_initiated",
+                "thread_id": thread_id,
+                "asset_name": asset_name,
+                "note": f"Initiated analysis pipeline with thread ID: {thread_id}",
+            }
+        ],
     }
-
 
     # LangGraph checkpoint configuration
     config = {
@@ -78,10 +90,14 @@ async def analyze_asset_financial_options_async(
         }
     }
 
-    # Create async PostgreSQL checkpointer
-    async with create_async_checkpointer() as checkpointer:
+    # Create async checkpointer with graceful fallback (Req 14 & 15)
+    async with create_resilient_async_checkpointer() as (checkpointer, is_persisted):
+        if not is_persisted:
+            initial_state["warnings"].append(
+                "PostgreSQL state persistence is unavailable. Running in ephemeral state mode."
+            )
 
-        # Build LangGraph with PostgreSQL persistence
+        # Build LangGraph with checkpointer
         graph = build_cfo_graph(
             checkpointer=checkpointer
         )
@@ -92,11 +108,20 @@ async def analyze_asset_financial_options_async(
             config=config,
         )
 
+        if not is_persisted and "audit_trail" in result:
+            result["audit_trail"].append({
+                "agent": "checkpoint_manager",
+                "action": "persistence_status",
+                "persisted_to_postgres": False,
+                "note": "PostgreSQL unavailable; executed with in-memory checkpointer without pretending persistence succeeded.",
+            })
+
     # Process final graph result
     return _process_result(
         result=result,
         thread_id=thread_id,
     )
+
 
 
 def analyze_asset_financial_options(
@@ -186,6 +211,9 @@ def _process_result(
         ),
 
         "financial_analysis": financial_analysis,
+
+        # Independent Validation stage (Req 12)
+        "independent_validation": result.get("independent_validation", {}),
 
         # Top-level financial keys for direct access and test compatibility
         "financed_amount": financial_analysis.get("financed_amount"),

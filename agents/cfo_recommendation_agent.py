@@ -130,6 +130,7 @@ Legal Validation:
 {legal_validation}
 """
 
+    llm_narrative_available = True
     try:
         llm_response = await ask_nvidia(prompt)
 
@@ -154,10 +155,11 @@ Legal Validation:
 
     except Exception:
         # The financial recommendation must remain available
-        # even if the explanation service fails.
+        # even if the explanation service fails (Req 15).
+        llm_narrative_available = False
         reason = (
             f"{recommendation} has the lowest total cost "
-            "among the compared options."
+            "among the compared options (Deterministic calculation)."
         )
 
     # Contradiction guard: verify LLM text does not contradict deterministic choice
@@ -179,7 +181,7 @@ Legal Validation:
             if f"{action} {other}" in reason_lower or f"{other} is {action}" in reason_lower:
                 reason = (
                     f"{recommendation} has the lowest total cost "
-                    "among the compared options."
+                    "among the compared options (Deterministic calculation)."
                 )
                 contradiction_found = True
                 break
@@ -192,18 +194,23 @@ Legal Validation:
         f"the provided total costs."
     )
 
-    executive_summary = (
-        f"Deterministic financial analysis confirms {recommendation} provides "
-        f"the most cost-effective capital allocation under Malaysian Hire-Purchase "
-        f"Act 2026 regulations."
-    )
+    if llm_narrative_available:
+        executive_summary = (
+            f"Deterministic financial analysis confirms {recommendation} provides "
+            f"the most cost-effective capital allocation under Malaysian Hire-Purchase "
+            f"Act 2026 regulations."
+        )
+    else:
+        executive_summary = (
+            f"Deterministic financial analysis confirms {recommendation} provides "
+            f"the lowest total ownership cost. [AI Executive Narrative Unavailable: External LLM Offline]"
+        )
 
     return {
         "recommendation": recommendation,
         "reason": reason,
         "executive_summary": executive_summary,
-        "key_financial_consideration": (
-            key_financial_consideration
-        ),
+        "key_financial_consideration": key_financial_consideration,
+        "llm_narrative_available": llm_narrative_available,
         "status": "success",
-    }
+    }

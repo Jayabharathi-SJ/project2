@@ -3,6 +3,7 @@ from langgraph.graph import END, START, StateGraph
 from graph.nodes import (
     cfo_recommendation_node,
     financial_analysis_node,
+    independent_validation_node,
     legal_validation_node,
     research_agent_node,
     validate_input_node,
@@ -22,6 +23,15 @@ def route_after_legal_validation(state: CFOState) -> str:
 
     if legal_validation.get("passed") is True:
         return "financial_analysis"
+
+    return "end"
+
+
+def route_after_independent_validation(state: CFOState) -> str:
+    independent_validation = state.get("independent_validation", {})
+
+    if independent_validation.get("passed") is True:
+        return "cfo_recommendation"
 
     return "end"
 
@@ -47,6 +57,11 @@ def build_cfo_graph(checkpointer=None):
     workflow.add_node(
         "financial_analysis",
         financial_analysis_node,
+    )
+
+    workflow.add_node(
+        "independent_validation",
+        independent_validation_node,
     )
 
     workflow.add_node(
@@ -84,7 +99,16 @@ def build_cfo_graph(checkpointer=None):
 
     workflow.add_edge(
         "financial_analysis",
-        "cfo_recommendation",
+        "independent_validation",
+    )
+
+    workflow.add_conditional_edges(
+        "independent_validation",
+        route_after_independent_validation,
+        {
+            "cfo_recommendation": "cfo_recommendation",
+            "end": END,
+        },
     )
 
     workflow.add_edge(
@@ -94,4 +118,4 @@ def build_cfo_graph(checkpointer=None):
 
     return workflow.compile(
         checkpointer=checkpointer,
-    )
+    )

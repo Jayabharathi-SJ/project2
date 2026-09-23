@@ -128,4 +128,141 @@ def check_minimum_deposit(
         "required_minimum": minimum_required,
         "actual_deposit": actual,
         "shortfall": shortfall,
-    }
+    }
+
+
+def evaluate_legal_compliance(
+    annual_eir: Decimal,
+    term_months: int,
+    rate_type: str,
+    down_payment: Decimal,
+    asset_price: Decimal,
+    retrieved_contexts: list = None,
+    qdrant_available: bool = True,
+) -> dict:
+    """
+    Evaluates Malaysian Hire-Purchase legal compliance with strict 3-layer separation
+    as required by Requirement 4:
+    Layer A: Retrieved Legal Evidence (from Qdrant RAG or registered legal enactments)
+    Layer B: Application of the Rule (explicit statutory provision tested)
+    Layer C: Validation Result (conclusive outcome with source distinction)
+
+    Distinguishes primary legislation (Act 212 / Term Charges Regulations) from
+    regulatory consumer guidance (BNM Consumer Guide 2026).
+    """
+    errors = []
+    rules_applied = []
+    retrieved_evidence = []
+
+    # 1. Evaluate EIR Cap
+    try:
+        validate_eir_cap(annual_eir=annual_eir, term_months=term_months, rate_type=rate_type)
+        eir_status = "PASSED"
+        eir_error = None
+    except ValueError as exc:
+        eir_status = "FAILED"
+        eir_error = str(exc)
+        errors.append(eir_error)
+
+    if rate_type == "fixed":
+        cap_val = Decimal("17.0") if term_months <= 60 else Decimal("16.0")
+        rules_applied.append({
+            "rule_id": "HP2026-FIXED-CAP-001",
+            "statutory_basis": "Hire-Purchase (Term Charges) Regulations & BNM Consumer Guide 2026",
+            "source_category": "primary_regulation_and_guidance",
+            "tested_condition": f"Fixed EIR {annual_eir}% p.a. <= {cap_val}% p.a. for {term_months} months",
+            "status": eir_status,
+            "error": eir_error,
+        })
+    else:
+        rules_applied.append({
+            "rule_id": "HP2026-VARIABLE-CAP-001",
+            "statutory_basis": "Hire-Purchase (Term Charges) Regulations & BNM Consumer Guide 2026",
+            "source_category": "primary_regulation_and_guidance",
+            "tested_condition": f"Variable EIR {annual_eir}% p.a. <= 17.0% p.a.",
+            "status": eir_status,
+            "error": eir_error,
+        })
+
+    # 2. Evaluate Statutory Minimum Deposit
+    deposit_check = check_minimum_deposit(down_payment=down_payment, asset_price=asset_price)
+    if not deposit_check["compliant"]:
+        dep_error = (
+            f"Down payment (RM {down_payment:.2f}) is below statutory minimum deposit "
+            f"of 10% (RM {deposit_check['required_minimum']:.2f}) required under Section 31(1) "
+            "of the Malaysian Hire-Purchase Act 1967."
+        )
+        errors.append(dep_error)
+        dep_status = "FAILED"
+    else:
+        dep_status = "PASSED"
+        dep_error = None
+
+    rules_applied.append({
+        "rule_id": "HP2026-DEP-001",
+        "statutory_basis": "Section 31(1), Hire-Purchase Act 1967 (Act 212)",
+        "source_category": "primary_legislation",
+        "tested_condition": f"Deposit RM {down_payment:.2f} >= 10% of cash price RM {asset_price:.2f}",
+        "status": dep_status,
+        "error": dep_error,
+    })
+
+    # 3. Process Retrieved Legal Evidence
+    if retrieved_contexts:
+        for ctx in retrieved_contexts:
+            retrieved_evidence.append({
+                "document_id": ctx.get("document_id") or ctx.get("rule_id", "STATUTORY-REF"),
+                "title": ctx.get("title") or ctx.get("topic", "Hire-Purchase Provision"),
+                "excerpt": ctx.get("content") or ctx.get("text", ""),
+                "source": ctx.get("source", "Authoritative Source"),
+                "page_number": ctx.get("page_number", 1),
+                "source_type": (
+                    "primary_legislation"
+                    if "Act 1967" in str(ctx.get("source", "")) or "Act 212" in str(ctx.get("source", ""))
+                    else "regulatory_guidance"
+                ),
+            })
+
+    # 4. Formulate Validation Result
+    if not qdrant_available and not retrieved_evidence:
+        validation_status = "INSUFFICIENT_INDEXED_SOURCES"
+        passed = False
+        conclusive = False
+        statutory_note = (
+            "Legal validation cannot be conclusively established from the currently indexed sources "
+            "because the authoritative legal vector store was unreachable. Fallback statutory bounds applied."
+        )
+    elif errors:
+        validation_status = "FAILED"
+        passed = False
+        conclusive = True
+        statutory_note = (
+            "Proposed financing terms violate statutory provisions under the Malaysian Hire-Purchase Act 1967 "
+            "and Hire-Purchase (Amendment) Act 2026 regulations."
+        )
+    else:
+        validation_status = "PASSED"
+        passed = True
+        conclusive = True
+        statutory_note = (
+            "Financing terms comply with statutory EIR caps under Hire-Purchase (Term Charges) Regulations 2026 "
+            "and 10% minimum deposit under Section 31(1) of the Hire-Purchase Act 1967 (Act 212)."
+        )
+
+    return {
+        "status": validation_status,
+        "passed": passed,
+        "conclusive": conclusive,
+        "errors": errors,
+        "statutory_compliance_note": statutory_note,
+        "retrieved_evidence": retrieved_evidence,
+        "rules_applied": rules_applied,
+        "deposit_compliance": deposit_check,
+        "eir_compliance": {
+            "annual_eir": annual_eir,
+            "term_months": term_months,
+            "rate_type": rate_type,
+            "compliant": eir_status == "PASSED",
+        },
+    }
+

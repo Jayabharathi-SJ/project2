@@ -146,7 +146,7 @@ def calculate_reducing_balance(
 
         opening_balance = closing_balance
 
-    return {
+    result = {
         "financed_amount": money(principal),
         "monthly_installment": monthly_installment,
         "total_interest": money(total_interest),
@@ -157,6 +157,87 @@ def calculate_reducing_balance(
         "rate_type": rate_type,
         "schedule": schedule,
     }
+
+    # Independent Amortization Schedule Reconciliation Check
+    is_valid, validation_errors, metrics = validate_amortization_schedule(result)
+    result["amortization_reconciliation"] = {
+        "reconciled": is_valid,
+        "errors": validation_errors,
+        "metrics": metrics,
+    }
+    if not is_valid:
+        raise ValueError(
+            "Amortization schedule reconciliation failed: " + "; ".join(validation_errors)
+        )
+
+    return result
+
+
+def validate_amortization_schedule(
+    schedule_result: Dict,
+    tolerance: Decimal = Decimal("0.02"),
+):
+    """
+    Independently validate a reducing-balance amortization schedule.
+    Verifies the four financial conservation invariants under Requirement 6:
+    1. sum(principal repayments) ≈ financed principal
+    2. sum(instalments) ≈ total paid
+    3. sum(interest) ≈ total interest
+    4. final closing balance ≈ zero (0.00)
+    """
+    errors = []
+    schedule = schedule_result.get("schedule", [])
+    if not schedule:
+        return False, ["Amortization schedule is empty."], {}
+
+    financed_amount = schedule_result.get("financed_amount", Decimal("0.00"))
+    total_paid = schedule_result.get("total_paid", Decimal("0.00"))
+    total_interest = schedule_result.get("total_interest", Decimal("0.00"))
+
+    sum_principal = sum((row["principal"] for row in schedule), Decimal("0.00"))
+    sum_instalments = sum((row["instalment"] for row in schedule), Decimal("0.00"))
+    sum_interest = sum((row["interest"] for row in schedule), Decimal("0.00"))
+    final_balance = schedule[-1]["closing_balance"]
+
+    diff_principal = abs(sum_principal - financed_amount)
+    diff_instalments = abs(sum_instalments - total_paid)
+    diff_interest = abs(sum_interest - total_interest)
+    diff_final_balance = abs(final_balance - Decimal("0.00"))
+
+    if diff_principal > tolerance:
+        errors.append(
+            f"Amortization principal reconciliation mismatch: sum of principal repayments ({sum_principal}) "
+            f"differs from financed principal ({financed_amount}) by {diff_principal} (tolerance: {tolerance})."
+        )
+
+    if diff_instalments > tolerance:
+        errors.append(
+            f"Amortization instalments reconciliation mismatch: sum of instalments ({sum_instalments}) "
+            f"differs from total paid ({total_paid}) by {diff_instalments} (tolerance: {tolerance})."
+        )
+
+    if diff_interest > tolerance:
+        errors.append(
+            f"Amortization interest reconciliation mismatch: sum of interest charges ({sum_interest}) "
+            f"differs from total interest ({total_interest}) by {diff_interest} (tolerance: {tolerance})."
+        )
+
+    if diff_final_balance > tolerance:
+        errors.append(
+            f"Amortization closing balance mismatch: final month closing balance ({final_balance}) "
+            f"does not reconcile to zero (tolerance: {tolerance})."
+        )
+
+    metrics = {
+        "sum_principal": money(sum_principal),
+        "sum_instalments": money(sum_instalments),
+        "sum_interest": money(sum_interest),
+        "final_closing_balance": money(final_balance),
+        "tolerance": tolerance,
+        "reconciled": len(errors) == 0,
+    }
+
+    return (len(errors) == 0, errors, metrics)
 
 
 def calculate_early_settlement(
