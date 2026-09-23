@@ -8,13 +8,10 @@
 // 2. Same-origin detection (co-hosted via FastAPI /dashboard)
 // 3. Local dev fallback
 const API_BASE_URL = (() => {
-  // Priority 1: Explicit deployment override (set in frontend/config.js)
   if (window.__API_BASE_URL__) return window.__API_BASE_URL__.replace(/\/+$/, '');
-  // Priority 2: Co-hosted — use same origin (local dev via FastAPI /dashboard)
   if (window.location.origin && window.location.origin !== "null" &&
       !window.location.origin.startsWith("file:"))
     return window.location.origin;
-  // Priority 3: Local file:// fallback
   return "http://127.0.0.1:8000";
 })();
 
@@ -61,6 +58,7 @@ let currentScheduleData = [];
 let currentChartMode = "total";
 let loadingStepInterval = null;
 let activePresetKey = "sedan";
+let isAnalysisRunning = false;
 
 // ---------------------------------------------------------------------------
 // Currency & Number Formatting Helpers
@@ -140,20 +138,32 @@ async function checkBackendHealth() {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(`${API_BASE_URL}/health/ready`, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (res.ok) {
-      badge.className = 'badge-tag pulse';
-      badge.innerText = 'FastAPI Connected';
-    } else {
+      const data = await res.json();
+      if (data.status === "ready") {
+        badge.className = 'badge-tag pulse';
+        badge.innerText = 'Connected';
+      } else if (data.status === "degraded") {
+        badge.className = 'badge-tag pulse connecting';
+        badge.innerText = 'Degraded';
+      } else {
+        badge.className = 'badge-tag pulse connecting';
+        badge.innerText = 'Starting';
+      }
+    } else if (res.status === 502 || res.status === 503) {
       badge.className = 'badge-tag pulse connecting';
-      badge.innerText = 'Backend Starting...';
+      badge.innerText = 'Starting';
+    } else {
+      badge.className = 'badge-tag pulse offline';
+      badge.innerText = 'Offline';
     }
   } catch (err) {
     badge.className = 'badge-tag pulse offline';
-    badge.innerText = 'Backend Offline';
+    badge.innerText = 'Offline';
   }
 }
 
@@ -181,7 +191,6 @@ function loadPreset(key) {
   document.getElementById('cash_discount').value = preset.cashDiscount;
 
   clearFieldErrors();
-  // Re-run real backend analysis
   executeAnalysis();
 }
 
@@ -230,10 +239,129 @@ function initInputListeners() {
   });
 }
 
+/**
+ * Reset MUST actually work (Requirement 6):
+ * - clear all user inputs / restore intended defaults
+ * - clear uploaded PDF
+ * - clear validation errors
+ * - clear old analysis results
+ * - clear charts
+ * - clear amortization schedule
+ * - clear recommendation
+ * - clear audit trail
+ * - allow a completely NEW analysis without stale results
+ */
 function resetForm() {
   clearFieldErrors();
   dismissGlobalError();
-  loadPreset(activePresetKey || 'sedan');
+  discardExtractedValues();
+
+  // Reset file input
+  const fileInput = document.getElementById('pdf-file-input');
+  if (fileInput) fileInput.value = '';
+
+  // Restore preset form values cleanly
+  const preset = PRESETS['sedan'];
+  activePresetKey = 'sedan';
+  document.querySelectorAll('.preset-chip').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.getElementById('preset-sedan');
+  if (activeBtn) activeBtn.classList.add('active');
+
+  document.getElementById('asset_name').value = preset.name;
+  document.getElementById('asset_price').value = preset.price;
+  document.getElementById('down_payment').value = preset.downPayment;
+  document.getElementById('hp_interest_rate').value = preset.hpRate;
+  document.getElementById('hp_period_months').value = preset.hpMonths;
+  document.getElementById('hp_rate_type').value = preset.hpRateType || "fixed";
+  document.getElementById('lease_monthly_payment').value = preset.leasePayment;
+  document.getElementById('lease_period_months').value = preset.leaseMonths;
+  document.getElementById('cash_discount').value = preset.cashDiscount;
+
+  // Clear data models
+  currentAnalysisData = null;
+  currentScheduleData = [];
+
+  // Hide rejection banner
+  const rejectionBanner = document.getElementById('rejection-banner');
+  if (rejectionBanner) rejectionBanner.style.display = 'none';
+
+  // Reset KPI cards
+  document.getElementById('kpi-optimal').innerText = "--";
+  document.getElementById('kpi-savings').innerText = "Awaiting analysis execution";
+  document.getElementById('kpi-lowest-cost').innerText = "--";
+  document.getElementById('kpi-asset-overview').innerText = "Asset: Not yet evaluated";
+  document.getElementById('kpi-hp-monthly').innerText = "--";
+  document.getElementById('kpi-hp-interest').innerText = "Total Interest: --";
+  document.getElementById('kpi-bnm-status').innerText = "--";
+  document.getElementById('kpi-bnm-status').style.color = "var(--text-secondary)";
+  document.getElementById('kpi-bnm-cap').innerText = "Statutory EIR & deposit check";
+
+  // Reset recommendation banner
+  document.getElementById('banner-badge').innerText = "Virtual CFO Ready";
+  document.getElementById('banner-heading').innerText = "Ready for Virtual CFO Analysis";
+  document.getElementById('banner-desc').innerText =
+    'Configure acquisition parameters on the left or upload a quotation PDF, then click "Execute Virtual CFO Analysis" to generate deterministic financial calculations, statutory legal compliance validation, and executive recommendations.';
+
+  // Reset option cards
+  ['cash', 'hp', 'lease'].forEach(opt => {
+    const card = document.getElementById(`card-${opt}`);
+    const badge = document.getElementById(`badge-${opt}`);
+    if (card) card.classList.remove('winner');
+    if (badge) badge.style.display = 'none';
+  });
+  document.getElementById('cost-cash').innerText = "--";
+  document.getElementById('upfront-cash').innerText = "--";
+  document.getElementById('liquidity-cash').innerText = "--";
+  document.getElementById('cost-hp').innerText = "--";
+  document.getElementById('upfront-hp').innerText = "--";
+  document.getElementById('monthly-hp').innerText = "--";
+  document.getElementById('interest-hp').innerText = "--";
+  document.getElementById('liquidity-hp').innerText = "--";
+  document.getElementById('cost-lease').innerText = "--";
+  document.getElementById('upfront-lease').innerText = "--";
+  document.getElementById('monthly-lease').innerText = "--";
+  document.getElementById('liquidity-lease').innerText = "--";
+
+  // Reset chart
+  const svg = document.getElementById('financial-chart-svg');
+  if (svg) {
+    svg.innerHTML = '<text x="380" y="130" text-anchor="middle" fill="#64748b" font-size="14">Enter parameters and execute analysis to view financial comparison</text>';
+  }
+
+  // Reset tabs
+  const compList = document.getElementById('compliance-checklist');
+  if (compList) {
+    compList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 28px;">No legal validation executed yet. Run an analysis above to verify statutory compliance under the Malaysian Hire-Purchase Act 1967 and 2026 Regulations.</div>';
+  }
+
+  const ragContainer = document.getElementById('rag-evidence-container');
+  if (ragContainer) {
+    ragContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 28px;">No legal research executed yet. Run an analysis above to retrieve authoritative statutory context from the Qdrant vector store.</div>';
+  }
+
+  const amortBody = document.getElementById('amort-table-body');
+  if (amortBody) {
+    amortBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No amortization schedule available. Execute an analysis above.</td></tr>';
+  }
+
+  const auditTimeline = document.getElementById('audit-timeline');
+  if (auditTimeline) {
+    auditTimeline.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 28px;">No audit trail recorded. Execute an analysis above to trace the 10-stage execution pipeline.</div>';
+  }
+
+  const threadBadge = document.getElementById('thread-id-badge');
+  if (threadBadge) threadBadge.innerText = 'session-standby';
+
+  const narrative = document.getElementById('narrative-content');
+  if (narrative) {
+    narrative.innerHTML = '<p style="color: var(--text-muted); margin: 0;">No executive rationale generated yet. Execute an analysis to review deterministic CFO recommendations and AI synthesis.</p>';
+  }
+
+  const navLegalBadge = document.getElementById('nav-legal-badge');
+  if (navLegalBadge) {
+    navLegalBadge.innerText = 'Awaiting Analysis';
+    navLegalBadge.className = 'badge-tag';
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -337,6 +465,12 @@ async function handlePdfUpload(file) {
     return;
   }
 
+  // Client-side file size guard (10 MB maximum)
+  if (file.size > 10 * 1024 * 1024) {
+    showGlobalError("File Too Large", "The uploaded PDF exceeds the 10 MB limit. Please upload a smaller document.");
+    return;
+  }
+
   showLoading("Multimodal parser analyzing PDF quotation...");
 
   const formData = new FormData();
@@ -351,7 +485,7 @@ async function handlePdfUpload(file) {
     hideLoading();
 
     if (!response.ok) {
-      let errMsg = "Could not parse quotation PDF.";
+      let errMsg = "Unable to reliably extract required financial information. Please review the document or enter the values manually.";
       try {
         const err = await response.json();
         errMsg = err.detail || errMsg;
@@ -366,7 +500,7 @@ async function handlePdfUpload(file) {
     if (data.status === "success" && data.extraction) {
       displayExtractedParameters(data.extraction, file.name);
     } else {
-      showGlobalError("Document Extraction", "No financial parameters could be extracted from this PDF.");
+      showGlobalError("Document Extraction", "Unable to reliably extract required financial information. Please review the document or enter the values manually.");
     }
 
   } catch (error) {
@@ -416,7 +550,7 @@ function displayExtractedParameters(extraction, filename) {
   if (fieldCount > 0) {
     previewBox.style.display = 'block';
   } else {
-    showGlobalError("No Data Extracted", "No financial parameters (price, interest rate, tenure) were detected in the uploaded PDF.");
+    showGlobalError("Document Extraction", "Unable to reliably extract required financial information. Please review the document or enter the values manually.");
   }
 }
 
@@ -446,7 +580,6 @@ function applyExtractedValues() {
   }
 
   discardExtractedValues();
-  // Execute analysis with user-confirmed parameters
   executeAnalysis();
 }
 
@@ -466,6 +599,8 @@ function handleAnalyzeSubmit(e) {
 }
 
 async function executeAnalysis() {
+  if (isAnalysisRunning) return;
+
   dismissGlobalError();
   clearFieldErrors();
 
@@ -519,6 +654,7 @@ async function executeAnalysis() {
     return;
   }
 
+  isAnalysisRunning = true;
   showLoading("Virtual CFO Committee executing multi-agent analysis...");
 
   const payload = {
@@ -534,7 +670,7 @@ async function executeAnalysis() {
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s for Render cold-starts
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for Render cold-starts
 
   try {
     const response = await fetch(`${API_BASE_URL}/analyze`, {
@@ -545,13 +681,13 @@ async function executeAnalysis() {
     });
 
     clearTimeout(timeoutId);
+    isAnalysisRunning = false;
     hideLoading();
 
     if (!response.ok) {
       let detailMsg = `Analysis request failed with status ${response.status}.`;
       try {
         const err = await response.json();
-        // Handle 422 validation messages
         if (err.messages && Array.isArray(err.messages)) {
           err.messages.forEach(msg => {
             const parts = msg.split(':');
@@ -596,6 +732,7 @@ async function executeAnalysis() {
 
   } catch (error) {
     clearTimeout(timeoutId);
+    isAnalysisRunning = false;
     hideLoading();
     if (error.name === 'AbortError') {
       showGlobalError(
@@ -621,6 +758,7 @@ function renderAnalysisResults(analysis, input) {
   const isValidationPassed = analysis.validation_passed !== false;
   const rejectionBanner = document.getElementById('rejection-banner');
   const rejectionList = document.getElementById('rejection-list');
+  const navLegalBadge = document.getElementById('nav-legal-badge');
 
   // Handle Legal Validation Failure State
   if (!isValidationPassed) {
@@ -633,6 +771,11 @@ function renderAnalysisResults(analysis, input) {
         rejectionList.appendChild(li);
       });
       rejectionBanner.style.display = 'flex';
+    }
+
+    if (navLegalBadge) {
+      navLegalBadge.innerText = 'BNM 2026: Non-Compliant';
+      navLegalBadge.className = 'badge-tag offline';
     }
 
     // Update KPI & Banner to indicate blocked status
@@ -658,7 +801,6 @@ function renderAnalysisResults(analysis, input) {
       if (badge) badge.style.display = 'none';
     });
 
-    // Still render audit trail & legal checklist for transparency
     renderComplianceTab(analysis.legal_validation || {}, input, false);
     renderAuditTrail(analysis.audit_trail || []);
     renderRagEvidence(analysis.research_findings || [], analysis.legal_rules || []);
@@ -667,6 +809,11 @@ function renderAnalysisResults(analysis, input) {
 
   // Legal Validation Passed: Proceed to full deterministic display
   if (rejectionBanner) rejectionBanner.style.display = 'none';
+
+  if (navLegalBadge) {
+    navLegalBadge.innerText = 'BNM 2026: Compliant';
+    navLegalBadge.className = 'badge-tag pulse';
+  }
 
   const comp = analysis.comparison || {};
   const hp = analysis.hire_purchase || {};
@@ -684,10 +831,17 @@ function renderAnalysisResults(analysis, input) {
   const cashCost = comp.cash_purchase_cost || (input.asset_price - (input.cash_discount || 0));
   const leaseCost = comp.leasing_cost || (input.lease_monthly_payment * input.lease_period_months);
 
-  // Compute exact deterministic savings vs highest alternative
-  const maxAlt = Math.max(hpCost, leaseCost);
-  const savings = Math.max(0, maxAlt - lowestCost);
-  document.getElementById('kpi-savings').innerText = `Savings: ${formatRM(savings)} vs alt`;
+  // Compute exact deterministic savings vs next best alternative
+  const otherCosts = [cashCost, hpCost, leaseCost].filter(c => Math.abs(c - lowestCost) > 0.01);
+  const nextCheapest = otherCosts.length > 0 ? Math.min(...otherCosts) : lowestCost;
+  const savings = Math.max(0, nextCheapest - lowestCost);
+  
+  if (savings > 0) {
+    document.getElementById('kpi-savings').innerText = `Savings: ${formatRM(savings)} vs next best`;
+  } else {
+    document.getElementById('kpi-savings').innerText = `Equivalent cost across options`;
+  }
+
   document.getElementById('kpi-lowest-cost').innerText = formatRM(lowestCost);
   document.getElementById('kpi-asset-overview').innerText = `Asset: ${input.asset_name}`;
   document.getElementById('kpi-hp-monthly').innerText = formatRM(hp.monthly_installment || 0);
@@ -708,6 +862,7 @@ function renderAnalysisResults(analysis, input) {
   // Comparison Option Cards
   document.getElementById('cost-cash').innerText = formatRM(cashCost);
   document.getElementById('upfront-cash').innerText = formatRM(cashCost);
+  document.getElementById('liquidity-cash').innerText = formatRM(0);
 
   document.getElementById('cost-hp').innerText = formatRM(hpCost);
   document.getElementById('upfront-hp').innerText = formatRM(input.down_payment);
@@ -744,7 +899,6 @@ function renderAnalysisResults(analysis, input) {
   renderComplianceTab(analysis.legal_validation || {}, input, true);
   renderRagEvidence(analysis.research_findings || [], analysis.legal_rules || []);
 
-  // Correct schedule array resolution (hp.schedule from backend, fallback to hp.amortization_schedule)
   const scheduleData = hp.schedule || hp.amortization_schedule || [];
   currentScheduleData = scheduleData;
   renderAmortizationSchedule(scheduleData);
@@ -857,7 +1011,9 @@ function renderFinancialChart(analysis) {
   } else if (currentChartMode === "breakdown") {
     // Mode 2: Stacked Structure Breakdown
     const hpInterest = hp.total_interest || 0;
-    const hpDeposit = (analysis.comparison && analysis.comparison.upfront_outlay) ? analysis.comparison.upfront_outlay.hire_purchase : 24000;
+    const hpDeposit = (analysis.comparison && analysis.comparison.upfront_outlay && typeof analysis.comparison.upfront_outlay.hire_purchase === 'number')
+      ? analysis.comparison.upfront_outlay.hire_purchase
+      : (parseFloat(document.getElementById('down_payment').value) || 0);
     const hpPrincipal = Math.max(0, hpCost - hpInterest - hpDeposit);
     const maxVal = Math.max(cashCost, hpCost, leaseCost, 1000) * 1.15;
 
@@ -948,9 +1104,9 @@ function renderFinancialChart(analysis) {
   } else if (currentChartMode === "monthly") {
     // Mode 3: Monthly Cash Outflow
     const hpInst = hp.monthly_installment || 0;
-    const leaseRent = analysis.leasing
-      ? (analysis.comparison ? analysis.comparison.leasing_cost / 60 : 2100)
-      : 2100;
+    const leaseRent = (analysis.leasing && analysis.leasing.monthly_payment)
+      ? analysis.leasing.monthly_payment
+      : (parseFloat(document.getElementById('lease_monthly_payment').value) || 0);
     const maxVal = Math.max(hpInst, leaseRent, 500) * 1.3;
 
     const barW = 120;
@@ -1006,36 +1162,75 @@ function renderFinancialChart(analysis) {
 // ---------------------------------------------------------------------------
 
 function renderComplianceTab(legal, input, passed) {
-  const eirCap = input.hp_period_months <= 60
-    ? (input.hp_rate_type === 'variable' ? 19.0 : 17.0)
-    : (input.hp_rate_type === 'variable' ? 18.0 : 16.0);
+  const container = document.getElementById('compliance-checklist');
+  if (!container) return;
+
+  const rateType = input.hp_rate_type || 'fixed';
+  // Malaysian 2026 EIR caps: variable = 17%, fixed <= 60m = 17%, fixed > 60m = 16%
+  const eirCap = rateType === 'variable'
+    ? 17.0
+    : (input.hp_period_months <= 60 ? 17.0 : 16.0);
   const isEirCompliant = input.hp_interest_rate <= eirCap;
   const minDeposit = input.asset_price * 0.10;
   const isDepositCompliant = input.down_payment >= minDeposit;
 
-  const eirItem = document.getElementById('compliance-item-eir');
-  const eirText = document.getElementById('compliance-eir-text');
-  if (eirItem && eirText) {
-    if (isEirCompliant) {
-      eirItem.className = 'compliance-item passed';
-      eirText.innerText = `EIR of ${formatPercent(input.hp_interest_rate)} is strictly below the statutory cap of ${eirCap.toFixed(2)}% p.a. for a ${input.hp_period_months}-month tenure (${input.hp_rate_type || 'fixed'} rate).`;
-    } else {
-      eirItem.className = 'compliance-item failed';
-      eirText.innerText = `EIR of ${formatPercent(input.hp_interest_rate)} EXCEEDS the statutory cap of ${eirCap.toFixed(2)}% p.a. under BNM 2026 regulations.`;
-    }
-  }
+  container.innerHTML = `
+    <div class="compliance-item ${isEirCompliant ? 'passed' : 'failed'}" id="compliance-item-eir">
+      <svg class="compliance-icon ${isEirCompliant ? 'success' : 'failed'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        ${isEirCompliant 
+          ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'
+          : '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'}
+      </svg>
+      <div class="compliance-content">
+        <h4>Statutory EIR Cap Compliance</h4>
+        <p id="compliance-eir-text">
+          ${isEirCompliant 
+            ? `EIR of ${formatPercent(input.hp_interest_rate)} is strictly below the statutory cap of ${eirCap.toFixed(2)}% p.a. for a ${input.hp_period_months}-month tenure (${rateType} rate).`
+            : `EIR of ${formatPercent(input.hp_interest_rate)} EXCEEDS the statutory cap of ${eirCap.toFixed(2)}% p.a. under Hire-Purchase (Term Charges) Regulations 2026.`}
+        </p>
+        <div class="compliance-legal-source">Source: Hire-Purchase (Term Charges) Regulations & BNM Consumer Guide 2026</div>
+      </div>
+    </div>
 
-  const depositItem = document.getElementById('compliance-item-deposit');
-  const depositText = document.getElementById('compliance-deposit-text');
-  if (depositItem && depositText) {
-    if (isDepositCompliant) {
-      depositItem.className = 'compliance-item passed';
-      depositText.innerText = `Down payment of ${formatRM(input.down_payment)} satisfies the mandatory statutory 10% minimum (${formatRM(minDeposit)}) under Section 31 of the HP Act 1967.`;
-    } else {
-      depositItem.className = 'compliance-item failed';
-      depositText.innerText = `Down payment of ${formatRM(input.down_payment)} is BELOW the mandatory statutory 10% minimum (${formatRM(minDeposit)}).`;
-    }
-  }
+    <div class="compliance-item ${isDepositCompliant ? 'passed' : 'failed'}" id="compliance-item-deposit">
+      <svg class="compliance-icon ${isDepositCompliant ? 'success' : 'failed'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        ${isDepositCompliant
+          ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'
+          : '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'}
+      </svg>
+      <div class="compliance-content">
+        <h4>Statutory Minimum Deposit (Section 31)</h4>
+        <p id="compliance-deposit-text">
+          ${isDepositCompliant
+            ? `Down payment of ${formatRM(input.down_payment)} satisfies the mandatory 10% statutory minimum (${formatRM(minDeposit)}) under Section 31(1) of the Malaysian Hire-Purchase Act 1967.`
+            : `Down payment of ${formatRM(input.down_payment)} is BELOW the mandatory statutory 10% minimum (${formatRM(minDeposit)}) required under Section 31(1) of Act 212.`}
+        </p>
+        <div class="compliance-legal-source">Source: Section 31(1), Malaysian Hire-Purchase Act 1967 (Act 212)</div>
+      </div>
+    </div>
+
+    <div class="compliance-item passed">
+      <svg class="compliance-icon success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <div class="compliance-content">
+        <h4>Mandatory Reducing Balance Methodology Applied</h4>
+        <p>Rule of 78 flat-rate methodology has been superseded by the reducing balance amortisation where interest accrues strictly on the unexpired principal.</p>
+        <div class="compliance-legal-source">Source: BNM HP 2026 Core Reform (Effective 1 June 2026; grace to 31 March 2027)</div>
+      </div>
+    </div>
+
+    <div class="compliance-item passed">
+      <svg class="compliance-icon success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <div class="compliance-content">
+        <h4>Early Settlement Rebate Guaranteed</h4>
+        <p>In the event of early settlement, statutory unaccrued interest rebate is computed directly from remaining amortised principal without arbitrary Rule of 78 front-load penalties.</p>
+        <div class="compliance-legal-source">Source: Malaysian Hire-Purchase Act 1967 s. 14 & BNM 2026 Consumer Guide</div>
+      </div>
+    </div>
+  `;
 }
 
 function renderRagEvidence(findings, rules) {
@@ -1044,39 +1239,27 @@ function renderRagEvidence(findings, rules) {
 
   container.innerHTML = '';
 
-  const allRules = rules && rules.length > 0 ? rules : [
-    {
-      rule_id: "BNM-HP2026-01",
-      topic: "EIR Cap",
-      text: "Statutory EIR cap for fixed rate hire purchase agreements with tenures up to 60 months is established at 17.00% per annum.",
-      source: "BNM Hire-Purchase (Amendment) Act 2026 Consumer Guide",
-      score: 1.0
-    },
-    {
-      rule_id: "BNM-HP2026-02",
-      topic: "Amortisation Mandate",
-      text: "Abolition of Rule of 78 flat rate interest allocation; lenders must adopt the Reducing Balance method calculated on remaining unexpired principal.",
-      source: "Revised Term Charges Regulations 2026",
-      score: 0.98
-    },
-    {
-      rule_id: "HPA-1967-S31",
-      topic: "Minimum Deposit",
-      text: "An owner who enters into a hire-purchase agreement without having first obtained a deposit of not less than 10 per cent of the cash price of the goods shall be guilty of an offence.",
-      source: "Hire-Purchase Act 1967, Section 31",
-      score: 0.95
-    }
-  ];
+  const evidenceList = (rules && rules.length > 0) ? rules : [];
 
-  allRules.forEach(rule => {
+  if (evidenceList.length === 0) {
+    container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 28px;">No statutory evidence retrieved for this analysis.</div>';
+    return;
+  }
+
+  evidenceList.forEach(rule => {
     const card = document.createElement('div');
     card.className = 'rag-card';
+    const isFallback = (rule.source && rule.source.includes('fallback')) ||
+                       (rule.source && rule.source.includes('legal_rules.py'));
+
     card.innerHTML = `
       <div class="rag-card-header">
         <span class="rag-rule-id">${rule.rule_id || 'STATUTORY PROVISION'} · ${rule.topic || 'General'}</span>
-        <span class="rag-score-pill">Verified Context</span>
+        <span class="rag-score-pill" style="${isFallback ? 'background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);' : ''}">
+          ${isFallback ? 'Statutory Baseline Fallback' : 'Qdrant Verified Context'}
+        </span>
       </div>
-      <div class="rag-text">"${rule.text || rule.finding || ''}"</div>
+      <div class="rag-text">"${rule.text || rule.finding || rule.content || ''}"</div>
       <div class="rag-source-foot">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -1101,7 +1284,6 @@ function renderAmortizationSchedule(schedule) {
     return;
   }
 
-  // Display all months from schedule
   schedule.forEach(row => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -1152,27 +1334,24 @@ function renderAuditTrail(trail) {
   if (!container) return;
   container.innerHTML = '';
 
-  const defaultTrail = [
-    { agent: "Input Validator", action: "Parameter Range Verification", note: "Validated asset price, down payment, and statutory constraints." },
-    { agent: "Research Agent", action: "Legal RAG Retrieval", note: "Retrieved BNM Hire-Purchase 2026 guidelines." },
-    { agent: "Legal Validator", action: "EIR Cap & Deposit Audit", note: "Verified statutory compliance with Section 31 and BNM EIR caps." },
-    { agent: "Financial Engine", action: "Deterministic Computation", note: "Executed Reducing Balance formulas and calculated exact comparison." },
-    { agent: "CFO Committee", action: "Optimal Strategy Selection", note: "Selected lowest total outlay option." }
-  ];
+  const items = (trail && trail.length > 0) ? trail : [];
 
-  const items = trail && trail.length > 0 ? trail : defaultTrail;
+  if (items.length === 0) {
+    container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 28px;">No audit trail recorded for this session.</div>';
+    return;
+  }
 
   items.forEach((item, idx) => {
     const node = document.createElement('div');
     node.className = 'audit-node';
-    const isError = item.action && item.action.includes('failed');
+    const isError = item.action && (item.action.includes('failed') || item.action.includes('error'));
 
     node.innerHTML = `
       <div class="audit-icon" style="${isError ? 'background: rgba(244,63,94,0.2); color: #fb7185; border-color: rgba(244,63,94,0.4);' : ''}">
         ${isError ? '✕' : (idx + 1)}
       </div>
       <div class="audit-card">
-        <div class="audit-agent-name">${item.agent || 'Agent'} — ${item.action ? item.action.replace(/_/g, ' ') : 'Executed'}</div>
+        <div class="audit-agent-name">${item.agent ? item.agent.replace(/_/g, ' ').toUpperCase() : 'AGENT'} — ${item.action ? item.action.replace(/_/g, ' ') : 'Executed'}</div>
         <div class="audit-detail">${item.note || item.detail || (item.errors ? item.errors.join('; ') : JSON.stringify(item))}</div>
       </div>
     `;
@@ -1184,12 +1363,15 @@ function renderNarrativeTab(cfoRec, recName, lowestCost) {
   const content = document.getElementById('narrative-content');
   if (!content) return;
 
+  const rationaleText = cfoRec.reason || cfoRec.executive_summary ||
+    `Based on deterministic evaluation, ${recName} incurs the lowest aggregate outlay of ${formatRM(lowestCost)}.`;
+
   content.innerHTML = `
     <div style="margin-bottom: 14px;">
       <span class="engine-tag llm">AI Executive Synthesis (NVIDIA Grounded)</span>
     </div>
     <h4 style="margin-bottom: 8px; color: #a5b4fc; font-size: 1rem;">CFO Recommendation Rationale</h4>
-    <p style="margin-bottom: 16px; color: #f1f5f9;">${cfoRec.reason || `Based on deterministic evaluation, ${recName} incurs the lowest aggregate outlay of ${formatRM(lowestCost)}.`}</p>
+    <p style="margin-bottom: 16px; color: #f1f5f9;">${rationaleText}</p>
 
     <h4 style="margin-bottom: 8px; color: #a5b4fc; font-size: 1rem;">Statutory Framework Note</h4>
     <p style="margin-bottom: 14px;">
