@@ -34,3 +34,6 @@ Thumbs.db
 
 # Sentence-transformer model cache (large binary files)
 model_cache/
+
+# Scratch & temporary testing files
+scratch/

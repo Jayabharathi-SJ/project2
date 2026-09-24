@@ -253,6 +253,7 @@ async def analyze_asset(
             "status": "success",
             "message": "Asset analysis completed successfully.",
             "analysis": result,
+            "thread_id": result.get("thread_id"),
         }
 
     except ValueError as exc:

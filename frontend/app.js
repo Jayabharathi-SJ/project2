@@ -114,6 +114,39 @@ function initNavigation() {
     { id: 'deepdive-section', navId: 'nav-link-deepdive' }
   ];
 
+  // Desktop smooth scroll on click
+  navSections.forEach(item => {
+    const link = document.getElementById(item.navId);
+    if (link) {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById(item.id);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+          document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+        }
+      });
+    }
+  });
+
+  // Mobile nav links smooth scroll and drawer closing
+  document.querySelectorAll('.mobile-nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+        document.querySelectorAll('.mobile-nav-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        closeMobileNav();
+      }
+    });
+  });
+
   window.addEventListener('scroll', () => {
     const scrollPos = window.scrollY + 140;
     for (let i = navSections.length - 1; i >= 0; i--) {
@@ -648,6 +681,13 @@ async function executeAnalysis() {
     setFieldError('lease_period_months', 'Lease term must be at least 1 month.');
     hasValidationError = true;
   }
+  if (isNaN(cashDiscount) || cashDiscount < 0) {
+    setFieldError('cash_discount', 'Cash discount cannot be negative.');
+    hasValidationError = true;
+  } else if (!isNaN(assetPrice) && cashDiscount > assetPrice) {
+    setFieldError('cash_discount', 'Cash discount cannot exceed the asset price.');
+    hasValidationError = true;
+  }
 
   if (hasValidationError) {
     showGlobalError("Input Validation Error", "Please review the highlighted fields before proceeding.");
@@ -711,6 +751,15 @@ async function executeAnalysis() {
             detailMsg = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
           }
         }
+
+        const lowerDetail = detailMsg.toLowerCase();
+        if (lowerDetail.includes('down payment')) setFieldError('down_payment', detailMsg);
+        else if (lowerDetail.includes('asset price')) setFieldError('asset_price', detailMsg);
+        else if (lowerDetail.includes('cash discount')) setFieldError('cash_discount', detailMsg);
+        else if (lowerDetail.includes('asset name')) setFieldError('asset_name', detailMsg);
+        else if (lowerDetail.includes('interest rate') || lowerDetail.includes('eir')) setFieldError('hp_interest_rate', detailMsg);
+        else if (lowerDetail.includes('period') || lowerDetail.includes('tenure')) setFieldError('hp_period_months', detailMsg);
+        else if (lowerDetail.includes('monthly payment')) setFieldError('lease_monthly_payment', detailMsg);
       } catch (e) {
         // Fallback
       }
@@ -721,9 +770,10 @@ async function executeAnalysis() {
     const data = await response.json();
     if (data.status === "success" && data.analysis) {
       currentAnalysisData = data.analysis;
-      if (data.thread_id) {
+      const threadId = data.thread_id || (data.analysis && data.analysis.thread_id);
+      if (threadId) {
         const threadBadge = document.getElementById('thread-id-badge');
-        if (threadBadge) threadBadge.innerText = data.thread_id;
+        if (threadBadge) threadBadge.innerText = threadId;
       }
       renderAnalysisResults(data.analysis, payload);
     } else {
@@ -852,12 +902,13 @@ function renderAnalysisResults(analysis, input) {
   document.getElementById('kpi-bnm-cap').innerText = `${formatPercent(input.hp_interest_rate)} EIR strictly compliant`;
 
   // Recommendation Banner
-  document.getElementById('banner-badge').innerText = `Optimal Selection: ${recName}`;
-  document.getElementById('banner-heading').innerText = `${recName} delivers the lowest total ownership outlay`;
+  document.getElementById('banner-badge').innerText = `Optimal Strategy: ${recName}`;
+  document.getElementById('banner-heading').innerText = `${recName} delivers the lowest total lifetime outlay`;
   
   const cfoRec = analysis.cfo_recommendation || {};
-  document.getElementById('banner-desc').innerText = cfoRec.reason || cfoRec.executive_summary ||
+  const baseDesc = cfoRec.reason || cfoRec.executive_summary ||
     `Deterministic calculations confirm ${recName} provides the most cost-effective capital allocation under Malaysian Hire-Purchase Act 2026 regulations.`;
+  document.getElementById('banner-desc').innerText = `${baseDesc} (Evaluation based on lowest nominal lifetime outlay; review corporate cash reserves and tax deductions for complete operational fit.)`;
 
   // Comparison Option Cards
   document.getElementById('cost-cash').innerText = formatRM(cashCost);
@@ -881,7 +932,7 @@ function renderAnalysisResults(analysis, input) {
     const badge = document.getElementById(`badge-${opt}`);
     const isWinner = (opt === 'cash' && recOption === 'cash_purchase') ||
                      (opt === 'hp' && recOption === 'hire_purchase') ||
-                     (opt === 'lease' && recOption === 'leasing');
+                     (opt === 'lease' && (recOption === 'leasing' || recOption === 'lease' || recOption === 'operating_lease'));
 
     if (isWinner) {
       if (card) card.classList.add('winner');
@@ -972,7 +1023,7 @@ function renderFinancialChart(analysis) {
     // Bars
     items.forEach((item, idx) => {
       const x = padLeft + idx * slotW + (slotW - barW) / 2;
-      const barH = (item.val / maxVal) * chartH;
+      const barH = Math.max(0, (item.val / maxVal) * chartH);
       const y = padTop + chartH - barH;
 
       const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -983,6 +1034,10 @@ function renderFinancialChart(analysis) {
       rect.setAttribute("rx", "6");
       rect.setAttribute("fill", item.color);
       rect.setAttribute("opacity", "0.9");
+
+      const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      title.textContent = `${item.label}: ${formatRM(item.val)}`;
+      rect.appendChild(title);
       svg.appendChild(rect);
 
       // Value label on top
@@ -1010,21 +1065,45 @@ function renderFinancialChart(analysis) {
 
   } else if (currentChartMode === "breakdown") {
     // Mode 2: Stacked Structure Breakdown
-    const hpInterest = hp.total_interest || 0;
-    const hpDeposit = (analysis.comparison && analysis.comparison.upfront_outlay && typeof analysis.comparison.upfront_outlay.hire_purchase === 'number')
+    const hpInterest = Math.max(0, hp.total_interest || 0);
+    const hpDeposit = Math.max(0, (analysis.comparison && analysis.comparison.upfront_outlay && typeof analysis.comparison.upfront_outlay.hire_purchase === 'number')
       ? analysis.comparison.upfront_outlay.hire_purchase
-      : (parseFloat(document.getElementById('down_payment').value) || 0);
+      : (parseFloat(document.getElementById('down_payment').value) || 0));
     const hpPrincipal = Math.max(0, hpCost - hpInterest - hpDeposit);
     const maxVal = Math.max(cashCost, hpCost, leaseCost, 1000) * 1.15;
 
     const barW = 120;
     const slotW = chartW / 3;
 
+    // Gridlines
+    for (let i = 0; i <= 4; i++) {
+      const yVal = (maxVal / 4) * i;
+      const yPos = padTop + chartH - (yVal / maxVal) * chartH;
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", padLeft);
+      line.setAttribute("x2", width - padRight);
+      line.setAttribute("y1", yPos);
+      line.setAttribute("y2", yPos);
+      line.setAttribute("stroke", "rgba(255, 255, 255, 0.08)");
+      line.setAttribute("stroke-dasharray", "4,4");
+      svg.appendChild(line);
+
+      const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      txt.setAttribute("x", padLeft - 10);
+      txt.setAttribute("y", yPos + 4);
+      txt.setAttribute("text-anchor", "end");
+      txt.setAttribute("fill", "#64748b");
+      txt.setAttribute("font-size", "11px");
+      txt.textContent = `RM ${(yVal / 1000).toFixed(0)}k`;
+      svg.appendChild(txt);
+    }
+
     // HP Stacked Bar
     const hpX = padLeft + 1 * slotW + (slotW - barW) / 2;
-    const hDep = (hpDeposit / maxVal) * chartH;
-    const hPrinc = (hpPrincipal / maxVal) * chartH;
-    const hInt = (hpInterest / maxVal) * chartH;
+    const hDep = Math.max(0, (hpDeposit / maxVal) * chartH);
+    const hPrinc = Math.max(0, (hpPrincipal / maxVal) * chartH);
+    const hInt = Math.max(0, (hpInterest / maxVal) * chartH);
 
     // Deposit segment
     const r1 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -1033,6 +1112,9 @@ function renderFinancialChart(analysis) {
     r1.setAttribute("width", barW);
     r1.setAttribute("height", hDep);
     r1.setAttribute("fill", "#3b82f6");
+    const t1 = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    t1.textContent = `HP Down Payment: ${formatRM(hpDeposit)}`;
+    r1.appendChild(t1);
     svg.appendChild(r1);
 
     // Principal segment
@@ -1042,6 +1124,9 @@ function renderFinancialChart(analysis) {
     r2.setAttribute("width", barW);
     r2.setAttribute("height", hPrinc);
     r2.setAttribute("fill", "#6366f1");
+    const t2 = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    t2.textContent = `HP Financed Principal: ${formatRM(hpPrincipal)}`;
+    r2.appendChild(t2);
     svg.appendChild(r2);
 
     // Interest segment
@@ -1051,28 +1136,37 @@ function renderFinancialChart(analysis) {
     r3.setAttribute("width", barW);
     r3.setAttribute("height", hInt);
     r3.setAttribute("fill", "#f59e0b");
+    const t3 = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    t3.textContent = `HP Financing Interest: ${formatRM(hpInterest)}`;
+    r3.appendChild(t3);
     svg.appendChild(r3);
 
     // Cash Bar
     const cashX = padLeft + (slotW - barW) / 2;
-    const cashH = (cashCost / maxVal) * chartH;
+    const cashH = Math.max(0, (cashCost / maxVal) * chartH);
     const rCash = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rCash.setAttribute("x", cashX);
     rCash.setAttribute("y", padTop + chartH - cashH);
     rCash.setAttribute("width", barW);
     rCash.setAttribute("height", cashH);
     rCash.setAttribute("fill", "#10b981");
+    const tCash = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    tCash.textContent = `Cash Purchase (Net Outlay): ${formatRM(cashCost)}`;
+    rCash.appendChild(tCash);
     svg.appendChild(rCash);
 
     // Lease Bar
     const leaseX = padLeft + 2 * slotW + (slotW - barW) / 2;
-    const leaseH = (leaseCost / maxVal) * chartH;
+    const leaseH = Math.max(0, (leaseCost / maxVal) * chartH);
     const rLease = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rLease.setAttribute("x", leaseX);
     rLease.setAttribute("y", padTop + chartH - leaseH);
     rLease.setAttribute("width", barW);
     rLease.setAttribute("height", leaseH);
     rLease.setAttribute("fill", "#8b5cf6");
+    const tLease = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    tLease.textContent = `Operating Lease (Cumulative Rentals): ${formatRM(leaseCost)}`;
+    rLease.appendChild(tLease);
     svg.appendChild(rLease);
 
     // Labels
@@ -1112,6 +1206,30 @@ function renderFinancialChart(analysis) {
     const barW = 120;
     const slotW = chartW / 3;
 
+    // Gridlines
+    for (let i = 0; i <= 4; i++) {
+      const yVal = (maxVal / 4) * i;
+      const yPos = padTop + chartH - (yVal / maxVal) * chartH;
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", padLeft);
+      line.setAttribute("x2", width - padRight);
+      line.setAttribute("y1", yPos);
+      line.setAttribute("y2", yPos);
+      line.setAttribute("stroke", "rgba(255, 255, 255, 0.08)");
+      line.setAttribute("stroke-dasharray", "4,4");
+      svg.appendChild(line);
+
+      const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      txt.setAttribute("x", padLeft - 10);
+      txt.setAttribute("y", yPos + 4);
+      txt.setAttribute("text-anchor", "end");
+      txt.setAttribute("fill", "#64748b");
+      txt.setAttribute("font-size", "11px");
+      txt.textContent = `RM ${(yVal / 1000).toFixed(1)}k`;
+      svg.appendChild(txt);
+    }
+
     const items = [
       { label: "Cash Purchase", val: 0, color: "#10b981", desc: "RM 0.00 / mo" },
       { label: "Hire Purchase", val: hpInst, color: "#6366f1", desc: formatRM(hpInst) + " / mo" },
@@ -1120,7 +1238,7 @@ function renderFinancialChart(analysis) {
 
     items.forEach((item, idx) => {
       const x = padLeft + idx * slotW + (slotW - barW) / 2;
-      const barH = (item.val / maxVal) * chartH;
+      const barH = Math.max(0, (item.val / maxVal) * chartH);
       const y = padTop + chartH - barH;
 
       if (barH > 0) {
@@ -1131,6 +1249,9 @@ function renderFinancialChart(analysis) {
         rect.setAttribute("height", barH);
         rect.setAttribute("rx", "6");
         rect.setAttribute("fill", item.color);
+        const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        title.textContent = `${item.label}: ${item.desc}`;
+        rect.appendChild(title);
         svg.appendChild(rect);
       }
 
@@ -1152,7 +1273,6 @@ function renderFinancialChart(analysis) {
       catTxt.setAttribute("font-weight", "600");
       catTxt.setAttribute("font-size", "13px");
       catTxt.textContent = item.label;
-      svg.appendChild(catTxt);
     });
   }
 }
@@ -1239,7 +1359,15 @@ function renderRagEvidence(findings, rules) {
 
   container.innerHTML = '';
 
-  const evidenceList = (rules && rules.length > 0) ? rules : [];
+  let evidenceList = (rules && rules.length > 0) ? rules : [];
+  if (evidenceList.length === 0 && Array.isArray(findings)) {
+    for (const f of findings) {
+      if (f && Array.isArray(f.contexts) && f.contexts.length > 0) {
+        evidenceList = f.contexts;
+        break;
+      }
+    }
+  }
 
   if (evidenceList.length === 0) {
     container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 28px;">No statutory evidence retrieved for this analysis.</div>';
@@ -1309,11 +1437,11 @@ function exportScheduleCSV() {
 
   currentScheduleData.forEach(row => {
     const m = row.month;
-    const b = (row.opening_balance ?? row.beginning_balance ?? row.beginning ?? 0).toFixed(2);
-    const inst = (row.instalment ?? row.installment ?? row.monthly_payment ?? 0).toFixed(2);
-    const p = (row.principal ?? row.principal_repaid ?? 0).toFixed(2);
-    const i = (row.interest ?? row.interest_charged ?? 0).toFixed(2);
-    const c = (row.closing_balance ?? row.ending_balance ?? row.ending ?? 0).toFixed(2);
+    const b = (parseFloat(row.opening_balance ?? row.beginning_balance ?? row.beginning ?? 0) || 0).toFixed(2);
+    const inst = (parseFloat(row.instalment ?? row.installment ?? row.monthly_payment ?? 0) || 0).toFixed(2);
+    const p = (parseFloat(row.principal ?? row.principal_repaid ?? 0) || 0).toFixed(2);
+    const i = (parseFloat(row.interest ?? row.interest_charged ?? 0) || 0).toFixed(2);
+    const c = (parseFloat(row.closing_balance ?? row.ending_balance ?? row.ending ?? 0) || 0).toFixed(2);
     csvRows.push([m, b, inst, p, i, c].join(","));
   });
 
@@ -1441,6 +1569,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initInputListeners();
   initDropzone();
   checkBackendHealth();
+  setInterval(checkBackendHealth, 20000);
   // Automatically execute default analysis against live FastAPI backend
   executeAnalysis();
 });

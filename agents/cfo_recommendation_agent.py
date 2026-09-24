@@ -6,7 +6,9 @@ from services.llm_service import ask_nvidia
 RECOMMENDATION_MAP = {
     "cash_purchase": "Cash Purchase",
     "hire_purchase": "Hire Purchase",
+    "leasing": "Lease",
     "lease": "Lease",
+    "operating_lease": "Lease",
     "insufficient_data": "Insufficient Data",
 }
 
