@@ -1290,7 +1290,10 @@ function renderComplianceTab(legal, input, passed) {
   const eirCap = rateType === 'variable'
     ? 17.0
     : (input.hp_period_months <= 60 ? 17.0 : 16.0);
-  const isEirCompliant = input.hp_interest_rate <= eirCap;
+  const hpRate = Number(input.hp_interest_rate);
+  const isEirCompliant = hpRate <= eirCap + 0.0001;
+  const isEirAtCap = Math.abs(hpRate - eirCap) <= 0.0001;
+  const eirRelationText = isEirAtCap ? 'is within the statutory cap' : 'is below the statutory cap';
   const minDeposit = input.asset_price * 0.10;
   const isDepositCompliant = input.down_payment >= minDeposit;
 
@@ -1305,7 +1308,7 @@ function renderComplianceTab(legal, input, passed) {
         <h4>Statutory EIR Cap Compliance</h4>
         <p id="compliance-eir-text">
           ${isEirCompliant 
-            ? `EIR of ${formatPercent(input.hp_interest_rate)} is strictly below the statutory cap of ${eirCap.toFixed(2)}% p.a. for a ${input.hp_period_months}-month tenure (${rateType} rate).`
+            ? `EIR of ${formatPercent(input.hp_interest_rate)} ${eirRelationText} of ${eirCap.toFixed(2)}% p.a. for a ${input.hp_period_months}-month tenure (${rateType} rate).`
             : `EIR of ${formatPercent(input.hp_interest_rate)} EXCEEDS the statutory cap of ${eirCap.toFixed(2)}% p.a. under Hire-Purchase (Term Charges) Regulations 2026.`}
         </p>
         <div class="compliance-legal-source">Source: Hire-Purchase (Term Charges) Regulations & BNM Consumer Guide 2026</div>
@@ -1345,9 +1348,9 @@ function renderComplianceTab(legal, input, passed) {
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
       </svg>
       <div class="compliance-content">
-        <h4>Early Settlement Rebate Guaranteed</h4>
-        <p>In the event of early settlement, statutory unaccrued interest rebate is computed directly from remaining amortised principal without arbitrary Rule of 78 front-load penalties.</p>
-        <div class="compliance-legal-source">Source: Malaysian Hire-Purchase Act 1967 s. 14 & BNM 2026 Consumer Guide</div>
+        <h4>Early Settlement Treatment</h4>
+        <p>Under the 2026 reducing-balance methodology, interest is calculated on the outstanding principal. Once the outstanding balance is fully settled, no further interest accrues. Therefore, a separate statutory rebate under the previous methodology does not arise for new agreements.</p>
+        <div class="compliance-legal-source">Source: BNM Consumer Guide 2026</div>
       </div>
     </div>
   `;
