@@ -31,12 +31,16 @@ def get_collection_name() -> str:
 def check_qdrant_health() -> Tuple[bool, str]:
     """
     Fast health probe for Qdrant vector store.
+    Reports connection and collection readiness with indexed document count.
     """
     try:
         client = create_qdrant_client()
         try:
-            client.get_collections()
-            return True, "Ready"
+            if client.collection_exists(COLLECTION_NAME):
+                info = client.get_collection(COLLECTION_NAME)
+                count = getattr(info, "points_count", None) or 0
+                return True, f"Ready ({count} points indexed)"
+            return True, "Connected (collection uninitialized)"
         finally:
             client.close()
     except Exception as exc:
@@ -97,6 +101,28 @@ def index_legal_documents(
     return len(points)
 
 
+def ensure_legal_collection_populated(client: QdrantClient) -> int:
+    """
+    Ensure the legal collection exists and contains indexed documents.
+    If empty or missing, automatically seeds it using the official BNM 2026 legal guide.
+    Returns the count of indexed documents.
+    """
+    create_legal_collection(client)
+    try:
+        info = client.get_collection(COLLECTION_NAME)
+        count = getattr(info, "points_count", None) or 0
+        if count > 0:
+            return count
+    except Exception:
+        pass
+
+    from rag.pdf_chunker import create_legal_documents
+    documents = create_legal_documents()
+    if documents:
+        return index_legal_documents(client, documents)
+    return 0
+
+
 def search_legal_documents(
     client: QdrantClient,
     query: str,
@@ -108,22 +134,12 @@ def search_legal_documents(
     if limit <= 0:
         raise ValueError("Limit must be greater than zero.")
 
-    # Guard: verify collection exists and has indexed points before loading heavy embedding model
+    # Guard: verify collection exists and has indexed points (auto-seed if empty)
     try:
-        if not client.collection_exists(COLLECTION_NAME):
-            raise RuntimeError(
-                f"Qdrant collection '{COLLECTION_NAME}' does not exist."
-            )
-        info = client.get_collection(COLLECTION_NAME)
-        if (getattr(info, "points_count", None) or 0) == 0:
-            raise RuntimeError(
-                f"Qdrant collection '{COLLECTION_NAME}' has no indexed documents."
-            )
-    except RuntimeError:
-        raise
+        ensure_legal_collection_populated(client)
     except Exception as exc:
         raise RuntimeError(
-            f"Failed to check Qdrant collection: {exc}"
+            f"Failed to check or seed Qdrant collection: {exc}"
         ) from exc
 
     from rag.embedding import generate_embedding

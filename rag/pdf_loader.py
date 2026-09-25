@@ -13,9 +13,33 @@ PDF_PATH = (
 
 def load_pdf_pages() -> List[Dict]:
     """
-    Extract text from the legal PDF page by page.
+    Extract text from the legal PDF or pre-extracted guide page by page.
     """
+    import re
 
+    # 1. Prefer pre-extracted clean text file to avoid font warnings and encoding anomalies
+    txt_path = (
+        Path(__file__).resolve().parent
+        / "documents"
+        / "extracted_guide_text.txt"
+    )
+    if txt_path.exists():
+        try:
+            content = txt_path.read_text(encoding="utf-8")
+            raw_pages = re.split(r"=== PAGE \d+ ===", content)
+            pages = []
+            page_num = 1
+            for part in raw_pages:
+                cleaned = part.strip()
+                if cleaned:
+                    pages.append({"page_number": page_num, "text": cleaned})
+                    page_num += 1
+            if pages:
+                return pages
+        except Exception:
+            pass
+
+    # 2. Fall back to pypdf extraction
     if not PDF_PATH.exists():
         raise FileNotFoundError(
             f"Legal PDF not found: {PDF_PATH}"

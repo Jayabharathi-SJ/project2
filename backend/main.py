@@ -217,6 +217,61 @@ async def readiness():
 
 
 # ---------------------------------------------------------------------------
+# RAG Diagnostics & Seeding Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/rag/status", tags=["rag"])
+async def rag_status():
+    """Diagnostic endpoint reporting Qdrant legal collection status."""
+    from rag.qdrant_store import COLLECTION_NAME, create_qdrant_client
+    try:
+        client = create_qdrant_client()
+        try:
+            exists = client.collection_exists(COLLECTION_NAME)
+            count = 0
+            if exists:
+                info = client.get_collection(COLLECTION_NAME)
+                count = getattr(info, "points_count", None) or 0
+            return {
+                "collection_name": COLLECTION_NAME,
+                "exists": exists,
+                "points_count": count,
+                "status": "ready" if (exists and count > 0) else "empty",
+            }
+        finally:
+            client.close()
+    except Exception as exc:
+        return {
+            "collection_name": COLLECTION_NAME,
+            "status": "unavailable",
+            "error": str(exc),
+        }
+
+
+@app.post("/rag/seed", tags=["rag"])
+async def rag_seed():
+    """Seed Qdrant legal collection from official BNM 2026 legal guide."""
+    from rag.qdrant_store import create_qdrant_client, ensure_legal_collection_populated
+    try:
+        client = create_qdrant_client()
+        try:
+            count = ensure_legal_collection_populated(client)
+            return {
+                "status": "success",
+                "message": f"Successfully ensured {count} legal documents indexed in Qdrant.",
+                "points_count": count,
+            }
+        finally:
+            client.close()
+    except Exception as exc:
+        logger.error("Manual RAG seeding failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to seed Qdrant collection: {str(exc)}",
+        ) from exc
+
+
+# ---------------------------------------------------------------------------
 # Core Analysis Endpoint
 # ---------------------------------------------------------------------------
 
