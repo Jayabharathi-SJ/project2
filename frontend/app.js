@@ -4,14 +4,21 @@
  */
 
 // Resilient API base URL resolution:
-// 1. Explicit override via config.js (for Vercel → Render split deployment)
-// 2. Same-origin detection (co-hosted via FastAPI /dashboard)
-// 3. Local dev fallback
+// 1. Explicit override via config.js (window.__API_BASE_URL__)
+// 2. Vercel deployment detection -> point to production Render backend
+// 3. Same-origin detection (co-hosted via FastAPI /dashboard)
+// 4. Local dev fallback
 const API_BASE_URL = (() => {
   if (window.__API_BASE_URL__) return window.__API_BASE_URL__.replace(/\/+$/, '');
-  if (window.location.origin && window.location.origin !== "null" &&
-      !window.location.origin.startsWith("file:"))
-    return window.location.origin;
+  if (typeof window !== "undefined" && window.location && window.location.hostname) {
+    if (window.location.hostname.endsWith("vercel.app")) {
+      return "https://project2-wesp.onrender.com";
+    }
+    if (window.location.origin && window.location.origin !== "null" &&
+        !window.location.origin.startsWith("file:")) {
+      return window.location.origin;
+    }
+  }
   return "http://127.0.0.1:8000";
 })();
 
