@@ -1506,7 +1506,7 @@ function renderNarrativeTab(cfoRec, recName, lowestCost) {
 
     <h4 style="margin-bottom: 8px; color: #a5b4fc; font-size: 1rem;">Statutory Framework Note</h4>
     <p style="margin-bottom: 14px;">
-      Under Bank Negara Malaysia's Hire-Purchase (Amendment) Act 2026, lenders are prohibited from utilizing the Rule of 78 formula for term charges. All financing options in this dashboard are computed strictly using the Reducing Balance Effective Interest Rate (EIR) methodology.
+      Under Bank Negara Malaysia's Hire-Purchase (Amendment) Act 2026, the Hire-Purchase financing scenario in this analysis uses the Reducing Balance / Effective Interest Rate (EIR) methodology. Cash Purchase and Operating Lease are evaluated using their respective deterministic cost calculations.
     </p>
 
     <div style="padding: 12px 14px; background: rgba(59, 130, 246, 0.08); border-left: 3px solid var(--accent-blue); border-radius: 4px; font-size: 0.8rem; color: #bfdbfe;">
